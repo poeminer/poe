@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoE Wither Stack Simulator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background-color: #2d2d2d;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 { color: #f3c147; text-align: center; margin-top: 0; }
+        .input-group { margin-bottom: 1.2rem; }
+        label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #bbb; }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+        .stat-box {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-label { font-size: 0.8rem; color: #888; text-transform: uppercase; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; color: #f3c147; }
+        .bonus-value { color: #47f37d; font-size: 1.1rem; }
+        .visualizer {
+            height: 10px;
+            background: #111;
+            margin-top: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            display: flex;
+        }
+        .bar-fill {
+            height: 100%;
+            background: #8e44ad;
+            transition: width 0.1s ease;
+        }
+        .hint { font-size: 0.8rem; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Wither Simulator</h2>
+    
+    <div class="input-group">
+        <label>Hits Per Second (Cast Rate × Projs/Hits)</label>
+        <input type="number" id="hitRate" value="7.5" step="0.1">
+    </div>
+
+    <div class="input-group">
+        <label>Wither Chance on Hit (%)</label>
+        <input type="number" id="witherChance" value="25" step="1">
+        <div class="hint">e.g., Withering Touch Support is 25%</div>
+    </div>
+
+    <div class="input-group">
+        <label>Wither Duration (Seconds)</label>
+        <input type="number" id="witherDuration" value="2.0" step="0.1">
+    </div>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-label">Current Stacks</div>
+            <div id="stackCount" class="stat-value">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Chaos Res Pen</div>
+            <div id="damageBonus" class="bonus-value">0%</div>
+        </div>
+    </div>
+
+    <div class="visualizer">
+        <div id="progressBar" class="bar-fill" style="width: 0%"></div>
+    </div>
+    <div class="hint" style="text-align: center;">Max stacks: 15</div>
+</div>
+
+<script>
+    const hitRateInput = document.getElementById('hitRate');
+    const chanceInput = document.getElementById('witherChance');
+    const durationInput = document.getElementById('witherDuration');
+    const stackDisplay = document.getElementById('stackCount');
+    const bonusDisplay = document.getElementById('damageBonus');
+    const progressBar = document.getElementById('progressBar');
+
+    let stacks = []; // Array of timestamps when stacks expire
+
+    function update() {
+        const now = Date.now();
+        const hitRate = parseFloat(hitRateInput.value) || 0;
+        const chance = (parseFloat(chanceInput.value) || 0) / 100;
+        const duration = (parseFloat(durationInput.value) || 0) * 1000;
+
+        // 1. Remove expired stacks
+        stacks = stacks.filter(expiry => expiry > now);
+
+        // 2. Simulate hits since last frame
+        // Logic: We run the loop at ~60fps. We calculate how many hits 
+        // occurred in that 16ms window.
+        const dt = 16 / 1000; 
+        const hitsThisFrame = hitRate * dt;
+        
+        // Probability handling for sub-hit increments
+        for (let i = 0; i < Math.floor(hitsThisFrame + Math.random()); i++) {
+            if (Math.random() < chance) {
+                if (stacks.length < 15) {
+                    stacks.push(now + duration);
+                } else {
+                    // Wither replaces the oldest stack if at cap
+                    stacks.sort((a, b) => a - b);
+                    stacks.shift();
+                    stacks.push(now + duration);
+                }
+            }
+        }
+
+        // 3. UI Update
+        const count = stacks.length;
+        stackDisplay.innerText = count;
+        bonusDisplay.innerText = `+${count * 6}% Increased`;
+        progressBar.style.width = `${(count / 15) * 100}%`;
+        
+        requestAnimationFrame(update);
+    }
+
+    // Start simulation
+    update();
+</script>
+
+</body>
+</html>
