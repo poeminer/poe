@@ -143,7 +143,7 @@
         // Automatically fetch and parse the CSV file when the window finishes loading
         window.addEventListener('DOMContentLoaded', () => {
             // "Delve_Scaling.csv" matches the file name in the same web directory
-            Papa.parse("Delve_Scaling.csv", {
+            Papa.parse("data/Delve_Scaling.csv", {
                 download: true,       // Tells PapaParse to grab the file over HTTP/HTTPS
                 header: true,
                 dynamicTyping: true,
