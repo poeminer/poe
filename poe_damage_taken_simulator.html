@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path of Exile Damage Simulator (Profiles)</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent: #c48231;
+            --border: #333;
+            --phys: #a38d6d;
+            --fire: #e65c00;
+            --cold: #40c4ff;
+            --light: #ffd600;
+            --chaos: #aa00ff;
+            --reduced: #4caf50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        h2 { color: var(--accent); margin: 0 0 10px 0; font-size: 16px; }
+        h3 { color: var(--accent); margin: 10px 0 6px 0; font-size: 14px; }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 12px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .form-group label {
+            flex: 1;
+        }
+
+        .form-group input[type="number"], .preset-select {
+            padding: 4px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .form-group input[type="number"] {
+            width: 70px;
+            text-align: right;
+        }
+
+        .preset-select {
+            width: 100%;
+            margin-bottom: 10px;
+            border-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .form-group input[type="checkbox"] {
+            transform: scale(1.1);
+            margin: 0 2px 0 10px;
+        }
+
+        .monster-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .monster-row input {
+            width: 100%;
+            padding: 4px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 3px;
+            text-align: right;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 10px 0;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            margin-top: 5px;
+        }
+
+        .result-table th, .result-table td {
+            padding: 6px 12px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .result-table th {
+            color: #aaa;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .result-table td:first-child, .result-table th:first-child {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .result-table tr.total-row td {
+            border-top: 1px solid var(--accent);
+            color: var(--accent);
+            font-size: 15px;
+            font-weight: bold;
+            background-color: #252525;
+        }
+
+        .result-table tr.reduced-row td {
+            border-bottom: 1px solid var(--reduced);
+            color: var(--reduced);
+            font-size: 15px;
+            font-weight: bold;
+            background-color: #1c281c;
+        }
+
+        .c-phys { color: var(--phys); }
+        .c-fire { color: var(--fire); }
+        .c-cold { color: var(--cold); }
+        .c-light { color: var(--light); }
+        .c-chaos { color: var(--chaos); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Monster Damage Profile</h2>
+            <select id="monsterPreset" class="preset-select"></select>
+            
+            <div class="monster-row" style="font-size: 11px; color: #aaa;">
+                <span>Type</span>
+                <span>Min</span>
+                <span>Max</span>
+            </div>
+            <div class="monster-row">
+                <span class="c-phys">Physical</span>
+                <input type="number" id="physMin" class="monster-input">
+                <input type="number" id="physMax" class="monster-input">
+            </div>
+            <div class="monster-row">
+                <span class="c-fire">Fire</span>
+                <input type="number" id="fireMin" class="monster-input">
+                <input type="number" id="fireMax" class="monster-input">
+            </div>
+            <div class="monster-row">
+                <span class="c-cold">Cold</span>
+                <input type="number" id="coldMin" class="monster-input">
+                <input type="number" id="coldMax" class="monster-input">
+            </div>
+            <div class="monster-row">
+                <span class="c-light">Lightning</span>
+                <input type="number" id="lightMin" class="monster-input">
+                <input type="number" id="lightMax" class="monster-input">
+            </div>
+            <div class="monster-row">
+                <span class="c-chaos">Chaos</span>
+                <input type="number" id="chaosMin" class="monster-input">
+                <input type="number" id="chaosMax" class="monster-input">
+            </div>
+
+            <hr>
+
+            <div class="form-group">
+                <label>Generic Multiplier (e.g., 1.3)</label>
+                <input type="number" id="genericMulti" class="monster-input" step="0.1">
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Player Defense Profile</h2>
+            <select id="playerPreset" class="preset-select"></select>
+
+            <div class="form-group">
+                <label class="c-fire">Fire Resist (%)</label>
+                <input type="number" id="resFire" class="player-input">
+            </div>
+            <div class="form-group">
+                <label class="c-cold">Cold Resist (%)</label>
+                <input type="number" id="resCold" class="player-input">
+            </div>
+            <div class="form-group">
+                <label class="c-light">Lightning Resist (%)</label>
+                <input type="number" id="resLight" class="player-input">
+            </div>
+            <div class="form-group">
+                <label class="c-chaos">Chaos Resist (%)</label>
+                <input type="number" id="resChaos" class="player-input">
+            </div>
+
+            <hr>
+
+            <div class="form-group">
+                <label>Armour</label>
+                <input type="number" id="armor" class="player-input">
+            </div>
+            <div class="form-group">
+                <label>Additional Phys Red. (%)</label>
+                <input type="number" id="addPDR" class="player-input">
+            </div>
+            <div class="form-group">
+                <label>Additional Ele Red. (%)</label>
+                <input type="number" id="addEleDR" class="player-input">
+            </div>
+            
+            <hr>
+
+            <div class="form-group">
+                <label>Transcendence (Armour to Ele)</label>
+                <input type="checkbox" id="transcendence" class="player-input">
+            </div>
+            <div class="form-group">
+                <label>% Armour to Chaos (e.g., 100)</label>
+                <input type="number" id="armorChaos" class="player-input">
+            </div>
+            <div class="form-group">
+                <label>Flesh and Stone (20% Less)</label>
+                <input type="checkbox" id="fleshAndStone" class="player-input">
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Damage Taken As (Shift)</h2>
+            <h3 class="c-phys" style="margin-top: 0;">Physical Taken As...</h3>
+            <div class="form-group">
+                <label class="c-fire">Fire (%)</label>
+                <input type="number" id="physToFire" class="player-input">
+            </div>
+            <div class="form-group">
+                <label class="c-cold">Cold (%)</label>
+                <input type="number" id="physToCold" class="player-input">
+            </div>
+            <div class="form-group">
+                <label class="c-light">Lightning (%)</label>
+                <input type="number" id="physToLight" class="player-input">
+            </div>
+            <div class="form-group">
+                <label class="c-chaos">Chaos (%)</label>
+                <input type="number" id="physToChaos" class="player-input">
+            </div>
+
+            <hr>
+
+            <h3>Elemental Taken As...</h3>
+            <div class="form-group">
+                <label>Cold taken as <span class="c-fire">Fire</span> (%)</label>
+                <input type="number" id="coldToFire" class="player-input">
+            </div>
+            <div class="form-group">
+                <label>Lightning taken as <span class="c-fire">Fire</span> (%)</label>
+                <input type="number" id="lightToFire" class="player-input">
+            </div>
+            <div class="form-group">
+                <label>Elemental taken as <span class="c-chaos">Chaos</span> (%)</label>
+                <input type="number" id="eleToChaos" class="player-input">
+            </div>
+
+            <hr>
+
+            <h3>Chaos Taken As...</h3>
+            <div class="form-group">
+                <label>Chaos taken as <span class="c-light">Lightning</span> (%)</label>
+                <input type="number" id="chaosToLight" class="player-input">
+            </div>
+        </div>
+
+        <div class="panel full-width">
+            <h2>Final Hit Damage Taken Breakdown</h2>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Damage Type</th>
+                        <th>Minimum Taken</th>
+                        <th>Average Taken</th>
+                        <th>Maximum Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="c-phys">
+                        <td>Physical</td>
+                        <td id="outPhysMin">0</td>
+                        <td id="outPhysAvg">0</td>
+                        <td id="outPhysMax">0</td>
+                    </tr>
+                    <tr class="c-fire">
+                        <td>Fire</td>
+                        <td id="outFireMin">0</td>
+                        <td id="outFireAvg">0</td>
+                        <td id="outFireMax">0</td>
+                    </tr>
+                    <tr class="c-cold">
+                        <td>Cold</td>
+                        <td id="outColdMin">0</td>
+                        <td id="outColdAvg">0</td>
+                        <td id="outColdMax">0</td>
+                    </tr>
+                    <tr class="c-light">
+                        <td>Lightning</td>
+                        <td id="outLightMin">0</td>
+                        <td id="outLightAvg">0</td>
+                        <td id="outLightMax">0</td>
+                    </tr>
+                    <tr class="c-chaos">
+                        <td>Chaos</td>
+                        <td id="outChaosMin">0</td>
+                        <td id="outChaosAvg">0</td>
+                        <td id="outChaosMax">0</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>TOTAL TAKEN</td>
+                        <td id="outTotalMin">0</td>
+                        <td id="outTotalAvg">0</td>
+                        <td id="outTotalMax">0</td>
+                    </tr>
+                    <tr class="reduced-row">
+                        <td>TOTAL REDUCED</td>
+                        <td id="outReducedMin">0%</td>
+                        <td id="outReducedAvg">0%</td>
+                        <td id="outReducedMax">0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const monsterPresets = {
+            mapBoss:      { name: "T16 Map Boss (Crit/Mod Estimate)", physMin: 6000,  physMax: 9000,  fireMin: 0,      fireMax: 0,      coldMin: 0,      coldMax: 0,      lightMin: 0,      lightMax: 0,      chaosMin: 0,    chaosMax: 0,    genericMulti: 1.4 },
+            shaperSlam:   { name: "The Shaper: Slam", physMin: 10000, physMax: 15000, fireMin: 0,      fireMax: 0,      coldMin: 6000,  coldMax: 9000,  lightMin: 0,      lightMax: 0,      chaosMin: 0,    chaosMax: 0,    genericMulti: 1.0 },
+            sirusBeam:    { name: "Sirus: \"Die!\" Beam (Per Segment)", physMin: 1800,  physMax: 2700,  fireMin: 1800,  fireMax: 2700,  coldMin: 1800,  coldMax: 2700,  lightMin: 1800,  lightMax: 2700,  chaosMin: 1800, chaosMax: 2700, genericMulti: 1.0 },
+            eaterTentacle:{ name: "Uber Eater: Tentacle Slam", physMin: 14000, physMax: 21000, fireMin: 0,      fireMax: 0,      coldMin: 0,      coldMax: 0,      lightMin: 9000,  lightMax: 14000, chaosMin: 0,    chaosMax: 0,    genericMulti: 1.2 }
+        };
+
+        const playerPresets = {
+            glassCannon: {
+                name: "Softcore League Starter (Glass)",
+                resFire: 75, resCold: 75, resLight: 75, resChaos: -60, armor: 0, addPDR: 0, addEleDR: 0,
+                transcendence: false, armorChaos: 0, fleshAndStone: false,
+                physToFire: 0, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, lightToFire: 0, eleToChaos: 0, chaosToLight: 0
+            },
+            hcJugg: {
+                name: "Hardcore Juggernaut (Armour Stack)",
+                resFire: 80, resCold: 80, resLight: 80, resChaos: 75, armor: 75000, addPDR: 32, addEleDR: 0,
+                transcendence: false, armorChaos: 0, fleshAndStone: true,
+                physToFire: 8, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, lightToFire: 0, eleToChaos: 0, chaosToLight: 0
+            },
+            transChieftain: {
+                name: "Transcendence Chieftain (90% All-Res)",
+                resFire: 90, resCold: 90, resLight: 90, resChaos: 75, armor: 90000, addPDR: 0, addEleDR: 0,
+                transcendence: true, armorChaos: 0, fleshAndStone: false,
+                physToFire: 40, physToCold: 20, physToLight: 20, physToChaos: 0, coldToFire: 50, lightToFire: 50, eleToChaos: 0, chaosToLight: 0
+            },
+            pfShift: {
+                name: "Pathfinder (100% Phys Taken As Ele)",
+                resFire: 82, resCold: 82, resLight: 82, resChaos: 75, armor: 15000, addPDR: 0, addEleDR: 6,
+                transcendence: false, armorChaos: 100, fleshAndStone: false,
+                physToFire: 45, physToCold: 25, physToLight: 20, physToChaos: 10, coldToFire: 0, lightToFire: 0, eleToChaos: 0, chaosToLight: 0
+            },
+            lolexceptional: {
+                name: "3_28 - LOLEXCEPTIONAL",
+                resFire: 90, resCold: 90, resLight: 90, resChaos: 75, armor: 176345, addPDR: 40, addEleDR: 40,
+                transcendence: true, armorChaos: 15, fleshAndStone: true,
+                physToFire: 20, physToCold: 0, physToLight: 83, physToChaos: 0, coldToFire: 18, lightToFire: 16, eleToChaos: 0, chaosToLight: 51
+            },
+            lolultimatums: {
+                name: "3_28 - LOLULTIMATUMS",
+                 resFire: 90, resCold: 90, resLight: 90, resChaos: 75, armor: 106907, addPDR: 40, addEleDR: 40,
+                transcendence: true, armorChaos: 15, fleshAndStone: true,
+                physToFire: 20, physToCold: 0, physToLight: 82, physToChaos: 0, coldToFire: 14, lightToFire: 11, eleToChaos: 0, chaosToLight: 47
+            },
+            Haifeld: {
+                name: "3_28 - Haifeld",
+                resFire: 89, resCold: 90, resLight: 89, resChaos: 75, armor: 16616, addPDR: 85, addEleDR: 85,
+                transcendence: false, armorChaos: 0, fleshAndStone: false,
+                physToFire: 0, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, lightToFire: 0, eleToChaos: 0, chaosToLight: 0
+            }
+        };
+
+        const defaultMonster = {
+            physMin: 5000, physMax: 5000, fireMin: 0, fireMax: 0, coldMin: 0, coldMax: 0, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.0
+        };
+
+        const defaultPlayer = {
+            resFire: 75, resCold: 75, resLight: 75, resChaos: 0, armor: 0, addPDR: 0, addEleDR: 0,
+            transcendence: false, armorChaos: 0, fleshAndStone: false,
+            physToFire: 0, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, lightToFire: 0, eleToChaos: 0, chaosToLight: 0
+        };
+
+        function calculateTrack(baseDmg, shift, res, armor, trans, armorForChaos, addPDR, addEleDR, lessMulti) {
+            let shiftedDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+
+            // Phys Conversions
+            let totalPhysShift = shift.physToFire + shift.physToCold + shift.physToLight + shift.physToChaos;
+            let physScale = totalPhysShift > 100 ? 100 / totalPhysShift : 1;
+            shiftedDmg.phys = baseDmg.phys * (1 - Math.min(totalPhysShift, 100) / 100);
+            shiftedDmg.fire += baseDmg.phys * (shift.physToFire * physScale / 100);
+            shiftedDmg.cold += baseDmg.phys * (shift.physToCold * physScale / 100);
+            shiftedDmg.light += baseDmg.phys * (shift.physToLight * physScale / 100);
+            shiftedDmg.chaos += baseDmg.phys * (shift.physToChaos * physScale / 100);
+
+            // Cold Conversions
+            let totalColdShift = shift.coldToFire + shift.eleToChaos;
+            let coldScale = totalColdShift > 100 ? 100 / totalColdShift : 1;
+            shiftedDmg.cold += baseDmg.cold * (1 - Math.min(totalColdShift, 100) / 100);
+            shiftedDmg.fire += baseDmg.cold * (shift.coldToFire * coldScale / 100);
+            shiftedDmg.chaos += baseDmg.cold * (shift.eleToChaos * coldScale / 100);
+
+            // Lightning Conversions
+            let totalLightShift = shift.lightToFire + shift.eleToChaos;
+            let lightScale = totalLightShift > 100 ? 100 / totalLightShift : 1;
+            shiftedDmg.light += baseDmg.light * (1 - Math.min(totalLightShift, 100) / 100);
+            shiftedDmg.fire += baseDmg.light * (shift.lightToFire * lightScale / 100);
+            shiftedDmg.chaos += baseDmg.light * (shift.eleToChaos * lightScale / 100);
+
+            // Fire Conversions
+            let totalFireShift = shift.eleToChaos;
+            shiftedDmg.fire += baseDmg.fire * (1 - Math.min(totalFireShift, 100) / 100);
+            shiftedDmg.chaos += baseDmg.fire * (Math.min(totalFireShift, 100) / 100);
+
+            // New Chaos Conversions
+            let totalChaosShift = shift.chaosToLight;
+            let chaosScale = totalChaosShift > 100 ? 100 / totalChaosShift : 1;
+            shiftedDmg.chaos += baseDmg.chaos * (1 - Math.min(totalChaosShift, 100) / 100);
+            shiftedDmg.light += baseDmg.chaos * (shift.chaosToLight * chaosScale / 100);
+
+            function getArmorMitigation(dmg, effArmor) {
+                if (dmg <= 0 || effArmor <= 0) return 0;
+                return Math.min(effArmor / (effArmor + 5 * dmg), 0.9);
+            }
+
+            let mitigated = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+
+            let physMit = trans ? 0 : getArmorMitigation(shiftedDmg.phys, armor);
+            let totalPDR = Math.min(physMit + (addPDR / 100), 0.9);
+            mitigated.phys = shiftedDmg.phys * (1 - totalPDR);
+
+            ['fire', 'cold', 'light', 'chaos'].forEach(type => {
+                let dmgAfterRes = shiftedDmg[type] * (1 - res[type] / 100);
+                if (dmgAfterRes < 0) dmgAfterRes = 0; 
+
+                let effArmor = (type === 'chaos') ? armorForChaos : (trans ? armor : 0);
+                let flatDR = (type === 'chaos') ? 0 : (addEleDR / 100);
+
+                let armorMit = getArmorMitigation(dmgAfterRes, effArmor);
+                let totalDR = Math.min(armorMit + flatDR, 0.9);
+
+                mitigated[type] = dmgAfterRes * (1 - totalDR);
+            });
+
+            let finalTaken = {};
+            let total = 0;
+            ['phys', 'fire', 'cold', 'light', 'chaos'].forEach(t => {
+                finalTaken[t] = Math.round(mitigated[t] * lessMulti);
+                total += finalTaken[t];
+            });
+            finalTaken.total = total;
+
+            return finalTaken;
+        }
+
+        function calculate() {
+            const getVal = id => parseFloat(document.getElementById(id).value) || 0;
+            const getChecked = id => document.getElementById(id).checked;
+
+            let multi = getVal('genericMulti');
+            let types = ['phys', 'fire', 'cold', 'light', 'chaos'];
+
+            let baseMin = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+            let baseAvg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+            let baseMax = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+
+            types.forEach(t => {
+                let min = getVal(t + 'Min');
+                let max = getVal(t + 'Max');
+                
+                baseMin[t] = min * multi;
+                baseMax[t] = max * multi;
+                baseAvg[t] = ((min + max) / 2) * multi;
+            });
+
+            let shift = {
+                physToFire: getVal('physToFire'),
+                physToCold: getVal('physToCold'),
+                physToLight: getVal('physToLight'),
+                physToChaos: getVal('physToChaos'),
+                coldToFire: getVal('coldToFire'),
+                lightToFire: getVal('lightToFire'),
+                eleToChaos: getVal('eleToChaos'),
+                chaosToLight: getVal('chaosToLight')
+            };
+
+            let res = {
+                fire: getVal('resFire'),
+                cold: getVal('resCold'),
+                light: getVal('resLight'),
+                chaos: getVal('resChaos')
+            };
+
+            let armor = getVal('armor');
+            let trans = getChecked('transcendence');
+            let armorForChaos = armor * (getVal('armorChaos') / 100);
+            let addPDR = getVal('addPDR');
+            let addEleDR = getVal('addEleDR');
+            let lessMulti = getChecked('fleshAndStone') ? 0.8 : 1.0;
+
+            let minResults = calculateTrack(baseMin, shift, res, armor, trans, armorForChaos, addPDR, addEleDR, lessMulti);
+            let avgResults = calculateTrack(baseAvg, shift, res, armor, trans, armorForChaos, addPDR, addEleDR, lessMulti);
+            let maxResults = calculateTrack(baseMax, shift, res, armor, trans, armorForChaos, addPDR, addEleDR, lessMulti);
+
+            const renderRow = (idPrefix, dataKey) => {
+                document.getElementById(idPrefix + 'Min').innerText = minResults[dataKey];
+                document.getElementById(idPrefix + 'Avg').innerText = avgResults[dataKey];
+                document.getElementById(idPrefix + 'Max').innerText = maxResults[dataKey];
+            };
+
+            renderRow('outPhys', 'phys');
+            renderRow('outFire', 'fire');
+            renderRow('outCold', 'cold');
+            renderRow('outLight', 'light');
+            renderRow('outChaos', 'chaos');
+            renderRow('outTotal', 'total');
+
+            let initMinTotal = baseMin.phys + baseMin.fire + baseMin.cold + baseMin.light + baseMin.chaos;
+            let initAvgTotal = baseAvg.phys + baseAvg.fire + baseAvg.cold + baseAvg.light + baseAvg.chaos;
+            let initMaxTotal = baseMax.phys + baseMax.fire + baseMax.cold + baseMax.light + baseMax.chaos;
+
+            const formatReduced = (initial, taken) => {
+                if (initial <= 0) return '0.0%';
+                let pct = ((initial - taken) / initial) * 100;
+                return pct.toFixed(1) + '%';
+            };
+
+            document.getElementById('outReducedMin').innerText = formatReduced(initMinTotal, minResults.total);
+            document.getElementById('outReducedAvg').innerText = formatReduced(initAvgTotal, avgResults.total);
+            document.getElementById('outReducedMax').innerText = formatReduced(initMaxTotal, maxResults.total);
+        }
+
+        function buildDropdownOptions() {
+            const mSelect = document.getElementById('monsterPreset');
+            mSelect.innerHTML = '<option value="custom">-- Custom Damage Setup --</option>';
+            for (const [key, config] of Object.entries(monsterPresets)) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = config.name;
+                mSelect.appendChild(opt);
+            }
+
+            const pSelect = document.getElementById('playerPreset');
+            pSelect.innerHTML = '<option value="custom">-- Custom Defense Setup --</option>';
+            for (const [key, config] of Object.entries(playerPresets)) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = config.name;
+                pSelect.appendChild(opt);
+            }
+        }
+
+        document.getElementById('monsterPreset').addEventListener('change', function() {
+            const preset = monsterPresets[this.value];
+            if (!preset) return;
+            
+            for (const [key, val] of Object.entries(preset)) {
+                if (key === 'name') continue;
+                document.getElementById(key).value = val;
+            }
+            calculate();
+        });
+
+        document.getElementById('playerPreset').addEventListener('change', function() {
+            const preset = playerPresets[this.value];
+            if (!preset) return;
+            
+            for (const [key, val] of Object.entries(preset)) {
+                if (key === 'name') continue;
+                const element = document.getElementById(key);
+                if (element.type === "checkbox") {
+                    element.checked = val;
+                } else {
+                    element.value = val;
+                }
+            }
+            calculate();
+        });
+
+        document.querySelectorAll('.monster-input').forEach(input => {
+            input.addEventListener('input', () => {
+                document.getElementById('monsterPreset').value = 'custom';
+            });
+        });
+
+        document.querySelectorAll('.player-input').forEach(input => {
+            input.addEventListener('input', () => {
+                document.getElementById('playerPreset').value = 'custom';
+            });
+        });
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        function initializeValues() {
+            buildDropdownOptions();
+            
+            for (const [key, val] of Object.entries(defaultMonster)) {
+                const el = document.getElementById(key);
+                if (el) el.value = val;
+            }
+            for (const [key, val] of Object.entries(defaultPlayer)) {
+                const el = document.getElementById(key);
+                if (el) {
+                    if (el.type === "checkbox") el.checked = val;
+                    else el.value = val;
+                }
+            }
+            calculate();
+        }
+
+        initializeValues();
+    </script>
+</body>
+</html>
