@@ -551,24 +551,16 @@
         let totalBase = DAMAGE_TYPES.reduce((sum, t) => sum + baseDmg[t], 0);
         if (doLog) logBreakdown.push(`➔ <b>1. Initial Incoming Damage:</b> ` + formatDmgLog(baseDmg) + ` <span style="color: #888;">(Base)</span>`);
 
-        // STEP 2: Shift (Corrected to PoE Proportional Scaling Rules)
+        // STEP 2: Shift
         let shiftedDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
         
-        // Calculate the total shift for each type to scale them down if they exceed 100%
+        // Calculate the total shift for each type
         const shiftSums = {
             phys: ctx.shift.physToFire + ctx.shift.physToCold + ctx.shift.physToLight + ctx.shift.physToChaos,
             fire: ctx.shift.fireToLight + ctx.shift.eleToChaos,
             cold: ctx.shift.coldToFire + ctx.shift.coldToLight + ctx.shift.eleToChaos,
             light: ctx.shift.lightToFire + ctx.shift.eleToChaos,
             chaos: ctx.shift.chaosToLight
-        };
-
-        const scales = {
-            phys: shiftSums.phys > 100 ? 100 / shiftSums.phys : 1,
-            fire: shiftSums.fire > 100 ? 100 / shiftSums.fire : 1,
-            cold: shiftSums.cold > 100 ? 100 / shiftSums.cold : 1,
-            light: shiftSums.light > 100 ? 100 / shiftSums.light : 1,
-            chaos: shiftSums.chaos > 100 ? 100 / shiftSums.chaos : 1
         };
 
         // Keep the unshifted base damage
@@ -578,29 +570,29 @@
 
         // Distribute proportionally scaled damage to destinations
         if (baseDmg.phys > 0) {
-            shiftedDmg.fire  += baseDmg.phys * (ctx.shift.physToFire * scales.phys / 100);
-            shiftedDmg.cold  += baseDmg.phys * (ctx.shift.physToCold * scales.phys / 100);
-            shiftedDmg.light += baseDmg.phys * (ctx.shift.physToLight * scales.phys / 100);
-            shiftedDmg.chaos += baseDmg.phys * (ctx.shift.physToChaos * scales.phys / 100);
+            shiftedDmg.fire  += baseDmg.phys * ctx.shift.physToFire;
+            shiftedDmg.cold  += baseDmg.phys * ctx.shift.physToCold;
+            shiftedDmg.light += baseDmg.phys * ctx.shift.physToLight;
+            shiftedDmg.chaos += baseDmg.phys * ctx.shift.physToChaos;
         }
         if (baseDmg.fire > 0) {
-            shiftedDmg.light += baseDmg.fire * (ctx.shift.fireToLight * scales.fire / 100);
-            shiftedDmg.chaos += baseDmg.fire * (ctx.shift.eleToChaos * scales.fire / 100);
+            shiftedDmg.light += baseDmg.fire * ctx.shift.fireToLight;
+            shiftedDmg.chaos += baseDmg.fire * ctx.shift.eleToChaos;
         }
         if (baseDmg.cold > 0) {
-            shiftedDmg.fire  += baseDmg.cold * (ctx.shift.coldToFire * scales.cold / 100);
-            shiftedDmg.light += baseDmg.cold * (ctx.shift.coldToLight * scales.cold / 100);
-            shiftedDmg.chaos += baseDmg.cold * (ctx.shift.eleToChaos * scales.cold / 100);
+            shiftedDmg.fire  += baseDmg.cold * ctx.shift.coldToFire;
+            shiftedDmg.light += baseDmg.cold * ctx.shift.coldToLight;
+            shiftedDmg.chaos += baseDmg.cold * ctx.shift.eleToChaos;
         }
         if (baseDmg.light > 0) {
-            shiftedDmg.fire  += baseDmg.light * (ctx.shift.lightToFire * scales.light / 100);
-            shiftedDmg.chaos += baseDmg.light * (ctx.shift.eleToChaos * scales.light / 100);
+            shiftedDmg.fire  += baseDmg.light * ctx.shift.lightToFire;
+            shiftedDmg.chaos += baseDmg.light * ctx.shift.eleToChaos;
         }
         if (baseDmg.chaos > 0) {
-            shiftedDmg.light += baseDmg.chaos * (ctx.shift.chaosToLight * scales.chaos / 100);
+            shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight;
         }
 
-        let totalShifted = logStep(2, "After Damage Taken As (Simultaneous & Scaled)", shiftedDmg, totalBase);
+        let totalShifted = logStep(2, "After Damage Taken As (Simultaneous)", shiftedDmg, totalBase);
 
         // STEP 3: Resistances
         let postResDmg = { phys: shiftedDmg.phys };
