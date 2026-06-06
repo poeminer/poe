@@ -605,12 +605,25 @@
         let totalRes = logStep(3, "After Resistances", postResDmg, totalShifted);
 
         // STEP 4: Armour & Flat DR
+        / STEP 4: Armour & Flat DR (Updated to perfectly mirror PoB/PoE rules)
         let postArmorDmg = {};
         DAMAGE_TYPES.forEach(type => {
             let effArmor = type === 'phys' ? ctx.armor : (type === 'chaos' ? ctx.armorForChaos : ctx.armorForEle);
-            let flatDR = type === 'phys' ? (ctx.addPDR / 100) : (type === 'chaos' ? 0 : (ctx.addEleDR / 100));
-            let armorMit = (postResDmg[type] <= 0 || effArmor <= 0) ? 0 : Math.min(effArmor / (effArmor + 5 * postResDmg[type]), 0.9);
-            postArmorDmg[type] = postResDmg[type] * (1 - Math.min(armorMit + flatDR, 0.9));
+            let armorMit = (postResDmg[type] <= 0 || effArmor <= 0) ? 0 : effArmor / (effArmor + 5 * postResDmg[type]);
+            
+            if (type === 'phys') {
+                // Physical PDR is strictly hard-capped at 90% total
+                let totalPDR = Math.min(0.90, armorMit + (ctx.addPDR / 100));
+                postArmorDmg[type] = postResDmg[type] * (1 - totalPDR);
+            } else {
+                // Elemental/Chaos armour mitigation is capped at 90% independently of your flat DR
+                let clampedArmourMit = Math.min(0.90, armorMit);
+                let flatDR = (type === 'chaos') ? 0 : (ctx.addEleDR / 100);
+                
+                // Total mitigation from layers cannot exceed 100% total damage prevention
+                let totalMit = Math.min(1.0, clampedArmourMit + flatDR);
+                postArmorDmg[type] = postResDmg[type] * (1 - totalMit);
+            }
         });
         let totalArmor = logStep(4, "After Armour & Flat DR", postArmorDmg, totalRes);
 
