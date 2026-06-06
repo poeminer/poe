@@ -605,7 +605,6 @@
         let totalRes = logStep(3, "After Resistances", postResDmg, totalShifted);
 
         // STEP 4: Armour & Flat DR
-        / STEP 4: Armour & Flat DR (Updated to perfectly mirror PoB/PoE rules)
         let postArmorDmg = {};
         DAMAGE_TYPES.forEach(type => {
             let effArmor = type === 'phys' ? ctx.armor : (type === 'chaos' ? ctx.armorForChaos : ctx.armorForEle);
