@@ -619,8 +619,8 @@
                 let clampedArmourMit = Math.min(0.90, armorMit);
                 let flatDR = (type === 'chaos') ? 0 : (ctx.addEleDR / 100);
                 
-                // Total mitigation from layers cannot exceed 100% total damage prevention
-                let totalMit = Math.min(1.0, clampedArmourMit + flatDR);
+                // Total mitigation from layers cannot exceed 90% total damage prevention
+                let totalMit = Math.min(0.9, clampedArmourMit + flatDR);
                 postArmorDmg[type] = postResDmg[type] * (1 - totalMit);
             }
         });
