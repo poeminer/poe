@@ -376,14 +376,6 @@
             </div>
         </div>
 
-        <!-- Breakdown Log Visualization -->
-        <div class="panel full-width">
-            <h2>Step-by-Step Defense Breakdown (Average Hit Log)</h2>
-            <ul id="breakdownLog" class="breakdown-log" style="list-style-type:none; padding:0; margin:0; font-family:monospace; font-size:13px;">
-                <!-- Logs injected here via JS -->
-            </ul>
-        </div>
-
         <!-- Final Hit Damage Taken Breakdown -->
         <div class="panel" style="grid-column: span 2;">
             <h2>Final Hit Damage Breakdown</h2>
@@ -398,55 +390,63 @@
                 </thead>
                 <tbody>
                     <tr class="c-phys">
-                        <td>Physical</td>
+                        <td style="text-align: left;">Physical</td>
                         <td id="outPhysMin">0</td>
                         <td id="outPhysAvg">0</td>
                         <td id="outPhysMax">0</td>
                     </tr>
                     <tr class="c-fire">
-                        <td>Fire</td>
+                        <td style="text-align: left;">Fire</td>
                         <td id="outFireMin">0</td>
                         <td id="outFireAvg">0</td>
                         <td id="outFireMax">0</td>
                     </tr>
                     <tr class="c-cold">
-                        <td>Cold</td>
+                        <td style="text-align: left;">Cold</td>
                         <td id="outColdMin">0</td>
                         <td id="outColdAvg">0</td>
                         <td id="outColdMax">0</td>
                     </tr>
                     <tr class="c-light">
-                        <td>Lightning</td>
+                        <td style="text-align: left;">Lightning</td>
                         <td id="outLightMin">0</td>
                         <td id="outLightAvg">0</td>
                         <td id="outLightMax">0</td>
                     </tr>
                     <tr class="c-chaos">
-                        <td>Chaos</td>
+                        <td style="text-align: left;">Chaos</td>
                         <td id="outChaosMin">0</td>
                         <td id="outChaosAvg">0</td>
                         <td id="outChaosMax">0</td>
                     </tr>
                     <tr class="total-row">
-                        <td>TOTAL HP LOST</td>
+                        <td style="text-align: left;">TOTAL HP LOST</td>
                         <td id="outTotalMin">0</td>
                         <td id="outTotalAvg">0</td>
                         <td id="outTotalMax">0</td>
                     </tr>
                     <tr class="delayed-row">
-                        <td>Delayed / Staggered Dmg</td>
+                        <td style="text-align: left;">Delayed / Staggered Dmg</td>
                         <td id="outDelayedMin">0</td>
                         <td id="outDelayedAvg">0</td>
                         <td id="outDelayedMax">0</td>
                     </tr>
                     <tr class="reduced-row">
-                        <td>TOTAL REDUCED %</td>
+                        <td style="text-align: left;">TOTAL REDUCED %</td>
                         <td id="outReducedMin">0%</td>
                         <td id="outReducedAvg">0%</td>
                         <td id="outReducedMax">0%</td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Breakdown Log Visualization (Moved below Final Hit Breakdown) -->
+        <div class="panel full-width">
+            <h2>Step-by-Step Defense Breakdown (Maximum Hit Log)</h2>
+            <ul id="breakdownLog" class="breakdown-log" style="list-style-type:none; padding:0; margin:0; font-family:monospace; font-size:13px; line-height: 1.6;">
+                <!-- Logs injected here via JS -->
+            </ul>
         </div>
         
         <!-- Maximum Hit Thresholds -->
@@ -462,23 +462,23 @@
                 </thead>
                 <tbody>
                     <tr class="c-phys">
-                        <td>Pure Physical</td>
+                        <td style="text-align: left;">Pure Physical</td>
                         <td id="maxPhys">0</td>
                     </tr>
                     <tr class="c-fire">
-                        <td>Pure Fire</td>
+                        <td style="text-align: left;">Pure Fire</td>
                         <td id="maxFire">0</td>
                     </tr>
                     <tr class="c-cold">
-                        <td>Pure Cold</td>
+                        <td style="text-align: left;">Pure Cold</td>
                         <td id="maxCold">0</td>
                     </tr>
                     <tr class="c-light">
-                        <td>Pure Lightning</td>
+                        <td style="text-align: left;">Pure Lightning</td>
                         <td id="maxLight">0</td>
                     </tr>
                     <tr class="c-chaos">
-                        <td>Pure Chaos</td>
+                        <td style="text-align: left;">Pure Chaos</td>
                         <td id="maxChaos">0</td>
                     </tr>
                 </tbody>
@@ -488,12 +488,7 @@
 
     <script>
         const monsterPresets = {
-            mapBoss:      { name: "T16 Map Boss (Crit Estimate)", physMin: 6000, physMax: 9000, fireMin: 0, fireMax: 0, coldMin: 0, coldMax: 0, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.4, isSpell: false, isCrit: true, critMulti: 130, elePen: 0 },
-            shaperSlam:   { name: "The Shaper: Slam", physMin: 10000, physMax: 15000, fireMin: 0, fireMax: 0, coldMin: 6000, coldMax: 9000, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.0, isSpell: false, isCrit: false, critMulti: 130, elePen: 0 },
-            shaperBall:   { name: "The Shaper: Frostbolt (Penetration)", physMin: 0, physMax: 0, fireMin: 0, fireMax: 0, coldMin: 6500, coldMax: 9500, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.0, isSpell: true, isCrit: false, critMulti: 130, elePen: 25 },
-            exarchBall:   { name: "Searing Exarch: Rolling Meteor", physMin: 0, physMax: 0, fireMin: 17000, fireMax: 25000, coldMin: 0, coldMax: 0, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.0, isSpell: true, isCrit: false, critMulti: 130, elePen: 0 },
-            sirusBeam:    { name: "Sirus: \"Die!\" Beam (Per Segment)", physMin: 1800, physMax: 2700, fireMin: 1800, fireMax: 2700, coldMin: 1800, coldMax: 2700, lightMin: 1800, lightMax: 2700, chaosMin: 1800, chaosMax: 2700, genericMulti: 1.0, isSpell: true, isCrit: false, critMulti: 130, elePen: 0 },
-            eaterTentacle:{ name: "Uber Eater: Tentacle Slam", physMin: 14000, physMax: 21000, fireMin: 0, fireMax: 0, coldMin: 0, coldMax: 0, lightMin: 9000, lightMax: 14000, chaosMin: 0, chaosMax: 0, genericMulti: 1.2, isSpell: false, isCrit: false, critMulti: 130, elePen: 0 }
+            mapBoss: { name: "T16 Map Boss (Crit Estimate)", physMin: 6000, physMax: 9000, fireMin: 0, fireMax: 0, coldMin: 0, coldMax: 0, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.4, isSpell: false, isCrit: true, critMulti: 130, elePen: 0 },
         };
 
         const playerPresets = {
@@ -505,25 +500,11 @@
                 physToFire: 0, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
             },
             hcJugg: {
-                name: "Hardcore Juggernaut (Armour Stack)",
-                lifePool: 6500, resFire: 80, resCold: 80, resLight: 80, resChaos: 75, armor: 75000, addPDR: 32, addEleDR: 0,
+                name: "Hardcore Juggernaut (Tanky)",
+                lifePool: 6000, resFire: 80, resCold: 80, resLight: 80, resChaos: 75, armor: 50000, addPDR: 8, addEleDR: 0,
                 suppress: 0, fortify: 20, redCrit: 30, delayedDmg: 0, guardSkill: "moltenshell",
-                armorEle: 8, armorChaos: 0, lessDmg: 20,
-                physToFire: 8, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
-            },
-            transChieftain: {
-                name: "Transcendence Chieftain (90% All-Res)",
-                lifePool: 5000, resFire: 90, resCold: 90, resLight: 90, resChaos: 75, armor: 90000, addPDR: 0, addEleDR: 0,
-                suppress: 0, fortify: 0, redCrit: 100, delayedDmg: 20, guardSkill: "none",
-                armorEle: 100, armorChaos: 0, lessDmg: 0,
-                physToFire: 40, physToCold: 20, physToLight: 20, physToChaos: 0, coldToFire: 50, coldToLight: 0, lightToFire: 50, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
-            },
-            pfShift: {
-                name: "Pathfinder (100% Phys Taken As Ele)",
-                lifePool: 4000, resFire: 82, resCold: 82, resLight: 82, resChaos: 75, armor: 15000, addPDR: 0, addEleDR: 6,
-                suppress: 53, fortify: 0, redCrit: 0, delayedDmg: 30, guardSkill: "none",
-                armorEle: 0, armorChaos: 100, lessDmg: 0,
-                physToFire: 45, physToCold: 25, physToLight: 20, physToChaos: 10, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
+                armorEle: 8, armorChaos: 0, lessDmg: 0,
+                physToFire: 10, physToCold: 10, physToLight: 10, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
             }
         };
 
@@ -585,7 +566,8 @@
 
         function calculateTrack(baseDmg, ctx, doLog = false) {
             let logBreakdown = [];
-            if (doLog) logBreakdown.push(`➔ <b>1. Initial Incoming Damage:</b> ` + formatDmgLog(baseDmg));
+            let total1 = baseDmg.phys + baseDmg.fire + baseDmg.cold + baseDmg.light + baseDmg.chaos;
+            if (doLog) logBreakdown.push(`➔ <b>1. Initial Incoming Damage:</b> ` + formatDmgLog(baseDmg) + ` <span style="color: #888;">(Base)</span>`);
 
             let shiftedDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
 
@@ -626,44 +608,57 @@
             shiftedDmg.chaos += baseDmg.chaos * (1 - Math.min(totalChaosShift, 100) / 100);
             shiftedDmg.light += baseDmg.chaos * (ctx.shift.chaosToLight * chaosScale / 100);
 
-            if (doLog && totalPhysShift + totalColdShift + totalFireShift + totalLightShift + totalChaosShift > 0) {
-                logBreakdown.push(`➔ <b>2. After Damage Taken As (Shift):</b> ` + formatDmgLog(shiftedDmg));
-            } else if(doLog) {
-                logBreakdown.push(`➔ <b>2. After Damage Taken As:</b> No shift applied.`);
+            let total2 = shiftedDmg.phys + shiftedDmg.fire + shiftedDmg.cold + shiftedDmg.light + shiftedDmg.chaos;
+            let red2 = total1 > 0 ? (1 - total2 / total1) * 100 : 0;
+            if (doLog) {
+                logBreakdown.push(`➔ <b>2. After Damage Taken As (Shift):</b> ` + formatDmgLog(shiftedDmg) + ` <span style="color: #6cf;">(Reduced by ${red2.toFixed(1)}%)</span>`);
             }
 
-            // Mitigation math
+            // Mitigation Helper Function
             function getArmorMitigation(dmg, effArmor) {
                 if (dmg <= 0 || effArmor <= 0) return 0;
                 return Math.min(effArmor / (effArmor + 5 * dmg), 0.9);
             }
 
-            let mitigated = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
-
-            // Physical Mitigation
-            let physMit = getArmorMitigation(shiftedDmg.phys, ctx.armor);
-            let totalPDR = Math.min(physMit + (ctx.addPDR / 100), 0.9);
-            mitigated.phys = shiftedDmg.phys * (1 - totalPDR);
-
-            // Elemental / Chaos Mitigation
+            // --- SPLIT STEP 3: RESISTANCES ---
+            let postResDmg = { phys: shiftedDmg.phys, fire: 0, cold: 0, light: 0, chaos: 0 };
             ['fire', 'cold', 'light', 'chaos'].forEach(type => {
                 let pen = (type === 'chaos') ? 0 : ctx.elePen;
                 let effRes = ctx.res[type] - pen; 
                 let dmgAfterRes = shiftedDmg[type] * (1 - effRes / 100);
-                if (dmgAfterRes < 0) dmgAfterRes = 0; 
-
-                let effArmor = (type === 'chaos') ? ctx.armorForChaos : ctx.armorForEle;
-                let flatDR = (type === 'chaos') ? 0 : (ctx.addEleDR / 100);
-
-                let armorMit = getArmorMitigation(dmgAfterRes, effArmor);
-                let totalDR = Math.min(armorMit + flatDR, 0.9);
-
-                mitigated[type] = dmgAfterRes * (1 - totalDR);
+                postResDmg[type] = dmgAfterRes < 0 ? 0 : dmgAfterRes;
             });
 
-            if(doLog) logBreakdown.push(`➔ <b>3. After Resistances & Armour:</b> ` + formatDmgLog(mitigated));
+            let total3 = postResDmg.phys + postResDmg.fire + postResDmg.cold + postResDmg.light + postResDmg.chaos;
+            let red3 = total2 > 0 ? (1 - total3 / total2) * 100 : 0;
+            if (doLog) {
+                logBreakdown.push(`➔ <b>3. After Resistances:</b> ` + formatDmgLog(postResDmg) + ` <span style="color: #6cf;">(Reduced by ${red3.toFixed(1)}%)</span>`);
+            }
 
-            // Multipliers (Suppress, Fortify, Less Sources)
+            // --- SPLIT STEP 4: ARMOUR & FLAT DAMAGE REDUCTION ---
+            let postArmorDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+            
+            // Physical Armour + Add PDR calculation
+            let physMit = getArmorMitigation(postResDmg.phys, ctx.armor);
+            let totalPDR = Math.min(physMit + (ctx.addPDR / 100), 0.9);
+            postArmorDmg.phys = postResDmg.phys * (1 - totalPDR);
+
+            // Elemental / Chaos Armour mitigation calculation
+            ['fire', 'cold', 'light', 'chaos'].forEach(type => {
+                let effArmor = (type === 'chaos') ? ctx.armorForChaos : ctx.armorForEle;
+                let flatDR = (type === 'chaos') ? 0 : (ctx.addEleDR / 100);
+                let armorMit = getArmorMitigation(postResDmg[type], effArmor);
+                let totalDR = Math.min(armorMit + flatDR, 0.9);
+                postArmorDmg[type] = postResDmg[type] * (1 - totalDR);
+            });
+
+            let total4 = postArmorDmg.phys + postArmorDmg.fire + postArmorDmg.cold + postArmorDmg.light + postArmorDmg.chaos;
+            let red4 = total3 > 0 ? (1 - total4 / total3) * 100 : 0;
+            if (doLog) {
+                logBreakdown.push(`➔ <b>4. After Armour & Flat DR:</b> ` + formatDmgLog(postArmorDmg) + ` <span style="color: #6cf;">(Reduced by ${red4.toFixed(1)}%)</span>`);
+            }
+
+            // --- STEP 5: MULTIPLIERS (Suppress, Fortify, Less Sources) ---
             let multiPool = 1.0;
             if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100);
             multiPool *= (1 - ctx.fortify / 100);
@@ -672,62 +667,69 @@
             let icPhys = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0;
             let icEle = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0;
 
-            let finalTaken = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
-            let totalHitDamage = 0;
-
+            let postMultiDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
             ['phys', 'fire', 'cold', 'light', 'chaos'].forEach(t => {
                 let specificMulti = multiPool;
                 if (t === 'phys') specificMulti *= icPhys;
                 if (['fire','cold','light'].includes(t)) specificMulti *= icEle;
-
-                finalTaken[t] = mitigated[t] * specificMulti;
-                totalHitDamage += finalTaken[t];
+                postMultiDmg[t] = postArmorDmg[t] * specificMulti;
             });
 
-            if (doLog && multiPool < 1.0 || icPhys < 1.0) {
-                logBreakdown.push(`➔ <b>4. After Multipliers (Suppress, Fortify, Less):</b> ` + formatDmgLog(finalTaken));
+            let total5 = postMultiDmg.phys + postMultiDmg.fire + postMultiDmg.cold + postMultiDmg.light + postMultiDmg.chaos;
+            let red5 = total4 > 0 ? (1 - total5 / total4) * 100 : 0;
+            if (doLog) {
+                logBreakdown.push(`➔ <b>5. After Multipliers (Suppress, Fortify, Less):</b> ` + formatDmgLog(postMultiDmg) + ` <span style="color: #6cf;">(Reduced by ${red5.toFixed(1)}%)</span>`);
             }
 
-            // Guard Skill Flat Absorb (Applied to Total Hit)
+            // --- STEP 6: GUARD SKILL FLAT ABSORB ---
             let guardAbsorb = 0;
             if (ctx.guardSkill === 'steelskin') {
-                guardAbsorb = Math.min(2209, totalHitDamage * 0.70);
+                guardAbsorb = Math.min(2209, total5 * 0.70);
             } else if (ctx.guardSkill === 'moltenshell') {
                 let msCap = Math.min(10000, ctx.armor * 0.20);
-                guardAbsorb = Math.min(msCap, totalHitDamage * 0.75);
+                guardAbsorb = Math.min(msCap, total5 * 0.75);
             }
 
-            let afterGuardTotal = totalHitDamage - guardAbsorb;
-            let guardRatio = totalHitDamage > 0 ? afterGuardTotal / totalHitDamage : 1;
+            let afterGuardTotal = total5 - guardAbsorb;
+            let guardRatio = total5 > 0 ? afterGuardTotal / total5 : 1;
 
-            if(doLog && guardAbsorb > 0) {
-                let tempPostGuard = {
-                    phys: finalTaken.phys * guardRatio,
-                    fire: finalTaken.fire * guardRatio,
-                    cold: finalTaken.cold * guardRatio,
-                    light: finalTaken.light * guardRatio,
-                    chaos: finalTaken.chaos * guardRatio
-                };
-                logBreakdown.push(`➔ <b>5. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(tempPostGuard));
+            let postGuardDmg = {
+                phys: postMultiDmg.phys * guardRatio,
+                fire: postMultiDmg.fire * guardRatio,
+                cold: postMultiDmg.cold * guardRatio,
+                light: postMultiDmg.light * guardRatio,
+                chaos: postMultiDmg.chaos * guardRatio
+            };
+
+            let total6 = postGuardDmg.phys + postGuardDmg.fire + postGuardDmg.cold + postGuardDmg.light + postGuardDmg.chaos;
+            let red6 = total5 > 0 ? (1 - total6 / total5) * 100 : 0;
+            if (doLog && guardAbsorb > 0) {
+                logBreakdown.push(`➔ <b>6. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(postGuardDmg) + ` <span style="color: #6cf;">(Reduced by ${red6.toFixed(1)}%)</span>`);
             }
 
+            // --- STEP 7: FINAL HIT DAMAGE TAKEN (Immediate vs Delayed) ---
+            let finalTaken = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
             let totalHpLost = 0;
             let totalDelayed = 0;
 
             ['phys', 'fire', 'cold', 'light', 'chaos'].forEach(t => {
-                finalTaken[t] *= guardRatio;
-                let delayedPart = finalTaken[t] * (ctx.delayedDmg / 100);
-                let immediatePart = finalTaken[t] - delayedPart;
+                let delayedPart = postGuardDmg[t] * (ctx.delayedDmg / 100);
+                let immediatePart = postGuardDmg[t] - delayedPart;
 
                 finalTaken[t] = Math.round(immediatePart);
                 totalHpLost += immediatePart;
                 totalDelayed += delayedPart;
             });
 
-            if (doLog && totalDelayed > 0) {
-                logBreakdown.push(`➔ <b>6. After Progenesis (Delayed):</b> Immediate Loss: <b>${Math.round(totalHpLost)}</b> <span class="c-delayed">(Delayed: ${Math.round(totalDelayed)})</span>`);
-            } else if (doLog) {
-                logBreakdown.push(`➔ <b>Final Hit Taken:</b> <span style="font-size:14px; font-weight:bold;">${Math.round(totalHpLost)}</span> HP`);
+            let totalPrev = guardAbsorb > 0 ? total6 : total5;
+            let red7 = totalPrev > 0 ? (1 - totalHpLost / totalPrev) * 100 : 0;
+
+            if (doLog) {
+                let finalLogMsg = `➔ <b>7. Final Hit Damage Taken (Immediate):</b> ` + formatDmgLog(finalTaken) + ` <span style="color: #6cf;">(Reduced by ${red7.toFixed(1)}%)</span>`;
+                if (totalDelayed > 0) {
+                    finalLogMsg += ` <span class="c-delayed">(Delayed: ${Math.round(totalDelayed)})</span>`;
+                }
+                logBreakdown.push(finalLogMsg);
             }
 
             finalTaken.total = Math.round(totalHpLost);
@@ -739,7 +741,7 @@
 
         function calculateMaxHit(dmgType, context) {
             let low = 0;
-            let high = 500000000; // 500 million
+            let high = 500000000; 
             let maxHit = 0;
             
             for (let i = 0; i < 60; i++) {
@@ -822,15 +824,15 @@
                 guardSkill: getStr('guardSkill')
             };
 
-            // Calculate actual damage numbers
-            let resMin = calculateTrack(baseMin, context);
-            let resAvg = calculateTrack(baseAvg, context, true); // True to output breakdown logs
-            let resMax = calculateTrack(baseMax, context);
+            // Calculate damage tracks
+            let resMin = calculateTrack(baseMin, context, false);
+            let resAvg = calculateTrack(baseAvg, context, false); 
+            let resMax = calculateTrack(baseMax, context, true); // Active logging set to work on MAXIMUM hit profile
 
-            // Print Logs to Breakdown UI
+            // Print Logs to Breakdown UI from Max Hit Execution
             const logEl = document.getElementById('breakdownLog');
             logEl.innerHTML = '';
-            resAvg.breakdown.forEach(str => {
+            resMax.breakdown.forEach(str => {
                 let li = document.createElement('li');
                 li.innerHTML = str;
                 logEl.appendChild(li);
@@ -845,7 +847,7 @@
                 document.getElementById('out' + f + 'Max').innerText = Math.round(resMax[lower]);
             });
 
-            // Calculate overall reduction percentage
+            // Calculate overall total reduction metric percentages
             let baseTotalMin = Object.values(baseMin).reduce((a,b)=>a+b, 0);
             let baseTotalAvg = Object.values(baseAvg).reduce((a,b)=>a+b, 0);
             let baseTotalMax = Object.values(baseMax).reduce((a,b)=>a+b, 0);
@@ -858,7 +860,7 @@
             document.getElementById('outReducedAvg').innerText = redAvg.toFixed(1) + '%';
             document.getElementById('outReducedMax').innerText = redMax.toFixed(1) + '%';
 
-            // Calculate Max Hits Survived
+            // Calculate Max Survival thresholds
             document.getElementById('maxPhys').innerText = calculateMaxHit('phys', context).toLocaleString();
             document.getElementById('maxFire').innerText = calculateMaxHit('fire', context).toLocaleString();
             document.getElementById('maxCold').innerText = calculateMaxHit('cold', context).toLocaleString();
