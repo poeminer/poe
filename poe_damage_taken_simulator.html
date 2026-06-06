@@ -570,26 +570,26 @@
 
         // Distribute proportionally scaled damage to destinations
         if (baseDmg.phys > 0) {
-            shiftedDmg.fire  += baseDmg.phys * ctx.shift.physToFire;
-            shiftedDmg.cold  += baseDmg.phys * ctx.shift.physToCold;
-            shiftedDmg.light += baseDmg.phys * ctx.shift.physToLight;
-            shiftedDmg.chaos += baseDmg.phys * ctx.shift.physToChaos;
+            shiftedDmg.fire  += baseDmg.phys * ctx.shift.physToFire/100;
+            shiftedDmg.cold  += baseDmg.phys * ctx.shift.physToCold/100;
+            shiftedDmg.light += baseDmg.phys * ctx.shift.physToLight/100;
+            shiftedDmg.chaos += baseDmg.phys * ctx.shift.physToChaos/100;
         }
         if (baseDmg.fire > 0) {
-            shiftedDmg.light += baseDmg.fire * ctx.shift.fireToLight;
-            shiftedDmg.chaos += baseDmg.fire * ctx.shift.eleToChaos;
+            shiftedDmg.light += baseDmg.fire * ctx.shift.fireToLight/100;
+            shiftedDmg.chaos += baseDmg.fire * ctx.shift.eleToChaos/100;
         }
         if (baseDmg.cold > 0) {
-            shiftedDmg.fire  += baseDmg.cold * ctx.shift.coldToFire;
-            shiftedDmg.light += baseDmg.cold * ctx.shift.coldToLight;
-            shiftedDmg.chaos += baseDmg.cold * ctx.shift.eleToChaos;
+            shiftedDmg.fire  += baseDmg.cold * ctx.shift.coldToFire/100;
+            shiftedDmg.light += baseDmg.cold * ctx.shift.coldToLight/100;
+            shiftedDmg.chaos += baseDmg.cold * ctx.shift.eleToChaos/100;
         }
         if (baseDmg.light > 0) {
-            shiftedDmg.fire  += baseDmg.light * ctx.shift.lightToFire;
-            shiftedDmg.chaos += baseDmg.light * ctx.shift.eleToChaos;
+            shiftedDmg.fire  += baseDmg.light * ctx.shift.lightToFire/100;
+            shiftedDmg.chaos += baseDmg.light * ctx.shift.eleToChaos/100;
         }
         if (baseDmg.chaos > 0) {
-            shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight;
+            shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight/100;
         }
 
         let totalShifted = logStep(2, "After Damage Taken As (Simultaneous)", shiftedDmg, totalBase);
