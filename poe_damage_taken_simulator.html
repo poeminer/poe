@@ -491,77 +491,72 @@
     <script>
     // --- 1. CONFIGURATION & PRESETS ---
     const DAMAGE_TYPES = ['phys', 'fire', 'cold', 'light', 'chaos'];
-    const ELEMENTAL_TYPES = ['fire', 'cold', 'light'];
 
-    const monsterPresets = {
-        mapBoss: { name: "T16 Map Boss (Crit Estimate)", physMin: 6000, physMax: 9000, fireMin: 0, fireMax: 0, coldMin: 0, coldMax: 0, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.4, isSpell: false, isCrit: true, critMulti: 130, elePen: 0 },
-    };
-
-    const playerPresets = {
-        glassCannon: {
-            name: "Softcore League Starter (Glass)",
-            lifePool: 4500, resFire: 75, resCold: 75, resLight: 75, resChaos: -60, armor: 0, addPDR: 0, addEleDR: 0,
-            suppress: 0, fortify: 0, redCrit: 0, delayedDmg: 0, guardSkill: "steelskin",
-            armorEle: 0, armorChaos: 0, lessDmg: 0,
-            physToFire: 0, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
+    const presets = {
+        monster: {
+            mapBoss: { name: "T16 Map Boss (Crit Estimate)", physMin: 6000, physMax: 9000, fireMin: 0, fireMax: 0, coldMin: 0, coldMax: 0, lightMin: 0, lightMax: 0, chaosMin: 0, chaosMax: 0, genericMulti: 1.4, isSpell: false, isCrit: true, critMulti: 130, elePen: 0 },
         },
-        hcJugg: {
-            name: "Hardcore Juggernaut (Tank)",
-            lifePool: 6500, resFire: 80, resCold: 80, resLight: 80, resChaos: 75, armor: 60000, addPDR: 20, addEleDR: 0,
-            suppress: 100, fortify: 20, redCrit: 50, delayedDmg: 0, guardSkill: "moltenshell",
-            armorEle: 8, armorChaos: 0, lessDmg: 0,
-            physToFire: 10, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
+        player: {
+            glassCannon: {
+                name: "Softcore League Starter (Glass)",
+                lifePool: 4500, resFire: 75, resCold: 75, resLight: 75, resChaos: -60, armor: 0, addPDR: 0, addEleDR: 0,
+                suppress: 0, fortify: 0, redCrit: 0, delayedDmg: 0, guardSkill: "steelskin",
+                armorEle: 0, armorChaos: 0, lessDmg: 0,
+                physToFire: 0, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
+            },
+            hcJugg: {
+                name: "Hardcore Juggernaut (Tank)",
+                lifePool: 6500, resFire: 80, resCold: 80, resLight: 80, resChaos: 75, armor: 60000, addPDR: 20, addEleDR: 0,
+                suppress: 100, fortify: 20, redCrit: 50, delayedDmg: 0, guardSkill: "moltenshell",
+                armorEle: 8, armorChaos: 0, lessDmg: 0,
+                physToFire: 10, physToCold: 0, physToLight: 0, physToChaos: 0, coldToFire: 0, coldToLight: 0, lightToFire: 0, fireToLight: 0, eleToChaos: 0, chaosToLight: 0
+            }
         }
     };
 
-    // --- 2. UI INITIALIZATION & EVENT BINDING ---
-    function populateDropdown(selectId, presets) {
-        const select = document.getElementById(selectId);
-        select.innerHTML = '';
-        for (let key in presets) {
-            let opt = document.createElement('option');
-            opt.value = key;
-            opt.innerText = presets[key].name;
-            select.appendChild(opt);
-        }
-        return select;
-    }
+    // --- 2. UI & EVENT BINDING ---
+    const getVal = id => parseFloat(document.getElementById(id)?.value) || 0;
+    const getChecked = id => document.getElementById(id)?.checked || false;
+    const getStr = id => document.getElementById(id)?.value || "";
 
-    const monsterSelect = populateDropdown('monsterPreset', monsterPresets);
-    const playerSelect = populateDropdown('playerPreset', playerPresets);
+    function initSelects() {
+        const populate = (id, options) => {
+            const select = document.getElementById(id);
+            select.innerHTML = Object.entries(options).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
+            return select;
+        };
 
-    function loadPreset(presetObj, key, fields) {
-        const p = presetObj[key];
-        if (!p) return;
-        fields.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (el.type === 'checkbox') el.checked = p[id];
-            else el.value = p[id];
+        const monsterSel = populate('monsterPreset', presets.monster);
+        const playerSel = populate('playerPreset', presets.player);
+
+        monsterSel.addEventListener('change', e => loadPreset(presets.monster[e.target.value]));
+        playerSel.addEventListener('change', e => loadPreset(presets.player[e.target.value]));
+        
+        document.querySelectorAll('input, select').forEach(el => {
+            if(!el.classList.contains('preset-select')) el.addEventListener('input', runCalculations);
         });
-        calculate();
     }
 
-    monsterSelect.addEventListener('change', (e) => loadPreset(monsterPresets, e.target.value, ['physMin','physMax','fireMin','fireMax','coldMin','coldMax','lightMin','lightMax','chaosMin','chaosMax','genericMulti','critMulti','elePen', 'isSpell', 'isCrit']));
-    playerSelect.addEventListener('change', (e) => loadPreset(playerPresets, e.target.value, ['lifePool','resFire','resCold','resLight','resChaos','armor','addPDR','addEleDR','suppress','fortify','redCrit','delayedDmg','armorEle','armorChaos','lessDmg','physToFire','physToCold','physToLight','physToChaos','coldToFire','coldToLight','lightToFire','fireToLight','eleToChaos','chaosToLight', 'guardSkill']));
-    document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calculate));
+    function loadPreset(presetData) {
+        if (!presetData) return;
+        Object.entries(presetData).forEach(([key, val]) => {
+            const el = document.getElementById(key);
+            if (!el) return;
+            if (el.type === 'checkbox') el.checked = val;
+            else el.value = val;
+        });
+        runCalculations();
+    }
 
-    // --- 3. HELPER FUNCTIONS ---
     function formatDmgLog(d) {
         let parts = DAMAGE_TYPES
             .filter(type => Math.round(d[type]) > 0)
             .map(type => `<span class="c-${type}">${Math.round(d[type])} ${type.charAt(0).toUpperCase() + type.slice(1)}</span>`);
-        
         let total = DAMAGE_TYPES.reduce((sum, type) => sum + (d[type] || 0), 0);
-        return parts.length === 0 ? `0` : parts.join(' | ') + ` <strong>(Sum: ${Math.round(total)})</strong>`;
+        return parts.length === 0 ? `0` : `${parts.join(' | ')} <strong>(Sum: ${Math.round(total)})</strong>`;
     }
 
-    function getArmorMitigation(dmg, effArmor) {
-        if (dmg <= 0 || effArmor <= 0) return 0;
-        return Math.min(effArmor / (effArmor + 5 * dmg), 0.9);
-    }
-
-    // --- 4. CORE CALCULATION ENGINE ---
+    // --- 3. CORE CALCULATION ENGINE ---
     function calculateTrack(baseDmg, ctx, doLog = false) {
         let logBreakdown = [];
         const logStep = (stepNum, desc, dmgObj, prevTotal) => {
@@ -575,7 +570,7 @@
         let totalBase = DAMAGE_TYPES.reduce((sum, t) => sum + baseDmg[t], 0);
         if (doLog) logBreakdown.push(`➔ <b>1. Initial Incoming Damage:</b> ` + formatDmgLog(baseDmg) + ` <span style="color: #888;">(Base)</span>`);
 
-        // STEP 2: Conversions (Damage Taken As)
+        // STEP 2: Shift
         let shiftedDmg = { ...baseDmg };
         const shiftMap = {
             phys: [ {to: 'fire', val: ctx.shift.physToFire}, {to: 'cold', val: ctx.shift.physToCold}, {to: 'light', val: ctx.shift.physToLight}, {to: 'chaos', val: ctx.shift.physToChaos} ],
@@ -585,18 +580,17 @@
             chaos: [ {to: 'light', val: ctx.shift.chaosToLight} ]
         };
 
-        DAMAGE_TYPES.forEach(sourceType => {
-            let totalShift = shiftMap[sourceType].reduce((sum, mapping) => sum + mapping.val, 0);
+        DAMAGE_TYPES.forEach(src => {
+            let totalShift = shiftMap[src].reduce((sum, map) => sum + map.val, 0);
             let scale = totalShift > 100 ? 100 / totalShift : 1;
-            
-            shiftedDmg[sourceType] = baseDmg[sourceType] * (1 - Math.min(totalShift, 100) / 100);
-            shiftMap[sourceType].forEach(mapping => {
-                shiftedDmg[mapping.to] += baseDmg[sourceType] * (mapping.val * scale / 100);
+            shiftedDmg[src] = baseDmg[src] * (1 - Math.min(totalShift, 100) / 100);
+            shiftMap[src].forEach(map => {
+                shiftedDmg[map.to] += baseDmg[src] * (map.val * scale / 100);
             });
         });
         let totalShifted = logStep(2, "After Damage Taken As", shiftedDmg, totalBase);
 
-        // STEP 3: Resistances (Mitigation Part 1)
+        // STEP 3: Resistances
         let postResDmg = { phys: shiftedDmg.phys };
         ['fire', 'cold', 'light', 'chaos'].forEach(type => {
             let pen = (type === 'chaos') ? 0 : ctx.elePen;
@@ -605,61 +599,51 @@
         });
         let totalRes = logStep(3, "After Resistances", postResDmg, totalShifted);
 
-        // STEP 4: Armour & Flat Damage Reduction (Mitigation Part 2)
+        // STEP 4: Armour & Flat DR
         let postArmorDmg = {};
         DAMAGE_TYPES.forEach(type => {
             let effArmor = type === 'phys' ? ctx.armor : (type === 'chaos' ? ctx.armorForChaos : ctx.armorForEle);
             let flatDR = type === 'phys' ? (ctx.addPDR / 100) : (type === 'chaos' ? 0 : (ctx.addEleDR / 100));
-            
-            let armorMit = getArmorMitigation(postResDmg[type], effArmor); 
-            let totalDR = Math.min(armorMit + flatDR, 0.9); // Cap mitigation at 90%
-            postArmorDmg[type] = postResDmg[type] * (1 - totalDR);
+            let armorMit = (postResDmg[type] <= 0 || effArmor <= 0) ? 0 : Math.min(effArmor / (effArmor + 5 * postResDmg[type]), 0.9);
+            postArmorDmg[type] = postResDmg[type] * (1 - Math.min(armorMit + flatDR, 0.9));
         });
         let totalArmor = logStep(4, "After Armour & Flat DR", postArmorDmg, totalRes);
 
-        // STEP 5: Multipliers (Suppress, Fortify, Less, IC) - Applied AFTER Armour
+        // STEP 5: Multipliers
         let multiPool = (1 - ctx.fortify / 100) * ctx.lessMulti;
         if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100);
-        
         let icMulti = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0; 
-        let postMultiDmg = {};
         
+        let postMultiDmg = {};
         DAMAGE_TYPES.forEach(t => {
-            let specificMulti = multiPool * (t !== 'chaos' ? icMulti : 1.0);
-            postMultiDmg[t] = postArmorDmg[t] * specificMulti;
+            postMultiDmg[t] = postArmorDmg[t] * multiPool * (t !== 'chaos' ? icMulti : 1.0);
         });
-        let totalMulti = logStep(5, "After Multipliers (Suppress, Fortify, Less)", postMultiDmg, totalArmor);
+        let totalMulti = logStep(5, "After Multipliers (Suppress/Fortify)", postMultiDmg, totalArmor);
 
-        // STEP 6: Guard Skill Flat Absorb
+        // STEP 6: Guard Skill
         let guardAbsorb = 0;
-        if (ctx.guardSkill === 'steelskin') {
-            guardAbsorb = Math.min(2209, totalMulti * 0.70);
-        } else if (ctx.guardSkill === 'moltenshell') {
-            let msCap = Math.min(10000, ctx.armor * 0.20);
-            guardAbsorb = Math.min(msCap, totalMulti * 0.75);
-        }
+        if (ctx.guardSkill === 'steelskin') guardAbsorb = Math.min(2209, totalMulti * 0.70);
+        else if (ctx.guardSkill === 'moltenshell') guardAbsorb = Math.min(Math.min(10000, ctx.armor * 0.20), totalMulti * 0.75);
 
         let guardRatio = totalMulti > 0 ? (totalMulti - guardAbsorb) / totalMulti : 1;
         let postGuardDmg = {};
         DAMAGE_TYPES.forEach(t => postGuardDmg[t] = postMultiDmg[t] * guardRatio);
-        
         if (doLog && guardAbsorb > 0) {
-            logBreakdown.push(`➔ <b>6. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(postGuardDmg) + ` <span style="color: #6cf;">(Reduced by ${((1 - (totalMulti - guardAbsorb) / totalMulti) * 100).toFixed(1)}%)</span>`);
+            logBreakdown.push(`➔ <b>6. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(postGuardDmg) + ` <span style="color: #6cf;">(Reduced by ${((1 - guardRatio) * 100).toFixed(1)}%)</span>`);
         }
 
-        // STEP 7: Final Hit Damage Taken (Immediate vs Delayed)
+        // STEP 7: Final
         let finalTaken = { total: 0, delayed: 0, breakdown: logBreakdown };
         DAMAGE_TYPES.forEach(t => {
             let delayedPart = postGuardDmg[t] * (ctx.delayedDmg / 100);
-            let immediatePart = postGuardDmg[t] - delayedPart;
-
-            finalTaken[t] = Math.round(immediatePart);
-            finalTaken.total += immediatePart;
+            let immPart = postGuardDmg[t] - delayedPart;
+            finalTaken[t] = Math.round(immPart);
+            finalTaken.total += immPart;
             finalTaken.delayed += delayedPart;
         });
 
         if (doLog) {
-            let finalLogMsg = `➔ <b>7. Final Hit Damage Taken (Immediate):</b> ` + formatDmgLog(finalTaken);
+            let finalLogMsg = `➔ <b>7. Final Damage Taken (Immediate):</b> ` + formatDmgLog(finalTaken);
             if (finalTaken.delayed > 0) finalLogMsg += ` <span class="c-delayed">(Delayed: ${Math.round(finalTaken.delayed)})</span>`;
             logBreakdown.push(finalLogMsg);
         }
@@ -669,41 +653,32 @@
         return finalTaken;
     }
 
-    function calculateMaxHit(dmgType, context) {
+    function calculateMaxHit(dmgType, ctx) {
         let low = 0, high = 500000000, maxHit = 0;
         for (let i = 0; i < 60; i++) {
             let mid = (low + high) / 2;
-            let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
-            testBase[dmgType] = mid;
-            
-            let res = calculateTrack(testBase, context);
-            if (res.total > context.lifePool) high = mid;
+            let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
+            if (calculateTrack(testBase, ctx).total > ctx.lifePool) high = mid;
             else { maxHit = mid; low = mid; }
         }
         return Math.round(maxHit);
     }
 
-    // --- 5. MAIN EXECUTION LOOP ---
-    function calculate() {
-        const getVal = id => parseFloat(document.getElementById(id)?.value) || 0;
-        const getChecked = id => document.getElementById(id)?.checked || false;
-        const getStr = id => document.getElementById(id)?.value || "";
-
-        let baseExtraMulti = Math.max(0, getVal('critMulti') - 100);
-        let reducedExtra = baseExtraMulti * (1 - getVal('redCrit') / 100);
-        let finalCritMulti = getChecked('isCrit') ? (100 + reducedExtra) / 100 : 1.0;
-        let totalMulti = getVal('genericMulti') * finalCritMulti;
+    // --- 4. DATA COLLECTION & UI UPDATE ---
+    function runCalculations() {
+        const baseExtraMulti = Math.max(0, getVal('critMulti') - 100);
+        const reducedExtra = baseExtraMulti * (1 - getVal('redCrit') / 100);
+        const finalCritMulti = getChecked('isCrit') ? (100 + reducedExtra) / 100 : 1.0;
+        const totalMulti = getVal('genericMulti') * finalCritMulti;
 
         let baseMin = {}, baseAvg = {}, baseMax = {};
         DAMAGE_TYPES.forEach(t => {
-            let min = getVal(t + 'Min') * totalMulti;
-            let max = getVal(t + 'Max') * totalMulti;
-            baseMin[t] = min;
-            baseMax[t] = max;
-            baseAvg[t] = (min + max) / 2;
+            baseMin[t] = getVal(t + 'Min') * totalMulti;
+            baseMax[t] = getVal(t + 'Max') * totalMulti;
+            baseAvg[t] = (baseMin[t] + baseMax[t]) / 2;
         });
 
-        let context = {
+        const ctx = {
             lifePool: getVal('lifePool'),
             shift: {
                 physToFire: getVal('physToFire'), physToCold: getVal('physToCold'), physToLight: getVal('physToLight'), physToChaos: getVal('physToChaos'),
@@ -711,9 +686,7 @@
                 eleToChaos: getVal('eleToChaos'), chaosToLight: getVal('chaosToLight')
             },
             res: { fire: getVal('resFire'), cold: getVal('resCold'), light: getVal('resLight'), chaos: getVal('resChaos') },
-            armor: getVal('armor'),
-            armorForEle: getVal('armor') * (getVal('armorEle') / 100),
-            armorForChaos: getVal('armor') * (getVal('armorChaos') / 100),
+            armor: getVal('armor'), armorForEle: getVal('armor') * (getVal('armorEle') / 100), armorForChaos: getVal('armor') * (getVal('armorChaos') / 100),
             addPDR: getVal('addPDR'), addEleDR: getVal('addEleDR'),
             lessMulti: Math.max(0, 1.0 - (getVal('lessDmg') / 100)),
             elePen: getVal('elePen'), isSpell: getChecked('isSpell'),
@@ -721,56 +694,43 @@
             delayedDmg: getVal('delayedDmg'), guardSkill: getStr('guardSkill')
         };
 
-        // Tracks
-        let resMin = calculateTrack(baseMin, context, false);
-        let resAvg = calculateTrack(baseAvg, context, false); 
-        let resMax = calculateTrack(baseMax, context, true); 
+        const resMin = calculateTrack(baseMin, ctx, false);
+        const resAvg = calculateTrack(baseAvg, ctx, false); 
+        const resMax = calculateTrack(baseMax, ctx, true); 
 
         // Update Log
         const logEl = document.getElementById('breakdownLog');
-        if (logEl) {
-            logEl.innerHTML = '';
-            resMax.breakdown.forEach(str => {
-                let li = document.createElement('li');
-                li.innerHTML = str;
-                logEl.appendChild(li);
-            });
-        }
+        if (logEl) logEl.innerHTML = resMax.breakdown.map(str => `<li>${str}</li>`).join('');
 
-        // Output Values
+        // Output Hit Values
         ['Phys', 'Fire', 'Cold', 'Light', 'Chaos', 'Total', 'Delayed'].forEach(f => {
-            let lower = f.toLowerCase();
-            const minEl = document.getElementById('out' + f + 'Min');
-            const avgEl = document.getElementById('out' + f + 'Avg');
-            const maxEl = document.getElementById('out' + f + 'Max');
-            if(minEl) minEl.innerText = Math.round(resMin[lower]);
-            if(avgEl) avgEl.innerText = Math.round(resAvg[lower]);
-            if(maxEl) maxEl.innerText = Math.round(resMax[lower]);
+            const lower = f.toLowerCase();
+            const setTxt = (id, val) => { let el = document.getElementById(id); if (el) el.innerText = val; };
+            setTxt('out' + f + 'Min', resMin[lower]);
+            setTxt('out' + f + 'Avg', resAvg[lower]);
+            setTxt('out' + f + 'Max', resMax[lower]);
         });
 
-        // Reduction Metric Percentages
+        // Reduction Percentages
         const calcRed = (resTotal, baseObj) => {
             let baseTotal = DAMAGE_TYPES.reduce((sum, t) => sum + baseObj[t], 0);
             return baseTotal > 0 ? ((1 - resTotal / baseTotal) * 100).toFixed(1) + '%' : '0.0%';
         };
+        document.getElementById('outReducedMin').innerText = calcRed(resMin.total, baseMin);
+        document.getElementById('outReducedAvg').innerText = calcRed(resAvg.total, baseAvg);
+        document.getElementById('outReducedMax').innerText = calcRed(resMax.total, baseMax);
 
-        const redMinEl = document.getElementById('outReducedMin');
-        const redAvgEl = document.getElementById('outReducedAvg');
-        const redMaxEl = document.getElementById('outReducedMax');
-        if(redMinEl) redMinEl.innerText = calcRed(resMin.total, baseMin);
-        if(redAvgEl) redAvgEl.innerText = calcRed(resAvg.total, baseAvg);
-        if(redMaxEl) redMaxEl.innerText = calcRed(resMax.total, baseMax);
-
-        // Max Survival Thresholds
+        // Max Thresholds
         DAMAGE_TYPES.forEach(t => {
-            const maxHitEl = document.getElementById('max' + t.charAt(0).toUpperCase() + t.slice(1));
-            if(maxHitEl) maxHitEl.innerText = calculateMaxHit(t, context).toLocaleString();
+            const el = document.getElementById('max' + t.charAt(0).toUpperCase() + t.slice(1));
+            if(el) el.innerText = calculateMaxHit(t, ctx).toLocaleString();
         });
     }
 
-    // --- 6. START APP ---
-    loadPreset(monsterPresets, 'mapBoss', ['physMin','physMax','fireMin','fireMax','coldMin','coldMax','lightMin','lightMax','chaosMin','chaosMax','genericMulti','critMulti','elePen', 'isSpell', 'isCrit']);
-    loadPreset(playerPresets, Object.keys(playerPresets)[0], ['lifePool','resFire','resCold','resLight','resChaos','armor','addPDR','addEleDR','suppress','fortify','redCrit','delayedDmg','armorEle','armorChaos','lessDmg','physToFire','physToCold','physToLight','physToChaos','coldToFire','coldToLight','lightToFire','fireToLight','eleToChaos','chaosToLight', 'guardSkill']);
-</script>
+    // --- 5. INITIALIZE ---
+    initSelects();
+    loadPreset(presets.monster.mapBoss);
+    loadPreset(presets.player.glassCannon);
+    </script>
 </body>
 </html>
