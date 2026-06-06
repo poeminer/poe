@@ -678,7 +678,7 @@
     function calculateMaxHit(dmgType, ctx) {
         // Increased ceiling and doubled the search depth for tighter floating-point precision
         let low = 0, high = 1000000000, maxHit = 0;
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 200; i++) {
             let mid = (low + high) / 2;
             let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
             
