@@ -654,35 +654,35 @@
             logBreakdown.push(`➔ <b>6. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(postGuardDmg) + ` <span style="color: #6cf;">(Reduced by ${((1 - guardRatio) * 100).toFixed(1)}%)</span>`);
         }
 
-        // STEP 7: Final
+       // STEP 7: Final (Corrected to always round UP to the higher integer)
         let finalTaken = { total: 0, delayed: 0, breakdown: logBreakdown };
         DAMAGE_TYPES.forEach(t => {
             let delayedPart = postGuardDmg[t] * (ctx.delayedDmg / 100);
             let immPart = postGuardDmg[t] - delayedPart;
-            finalTaken[t] = Math.round(immPart);
-            finalTaken.total += immPart;
-            finalTaken.delayed += delayedPart;
+            
+            // Path of Exile always registers fractional damage as a minimum of 1
+            finalTaken[t] = Math.ceil(immPart);
+            finalTaken.total += Math.ceil(immPart);
+            finalTaken.delayed += Math.ceil(delayedPart);
         });
 
         if (doLog) {
             let finalLogMsg = `➔ <b>7. Final Damage Taken (Immediate):</b> ` + formatDmgLog(finalTaken);
-            if (finalTaken.delayed > 0) finalLogMsg += ` <span class="c-delayed">(Delayed: ${Math.round(finalTaken.delayed)})</span>`;
+            if (finalTaken.delayed > 0) finalLogMsg += ` <span class="c-delayed">(Delayed: ${finalTaken.delayed})</span>`;
             logBreakdown.push(finalLogMsg);
         }
 
-        finalTaken.total = Math.round(finalTaken.total);
-        finalTaken.delayed = Math.round(finalTaken.delayed);
         return finalTaken;
     }
 
     function calculateMaxHit(dmgType, ctx) {
-        // Increased ceiling and doubled the search depth for tighter floating-point precision
+        // High precision search loop
         let low = 0, high = 1000000000, maxHit = 0;
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 100; i++) {
             let mid = (low + high) / 2;
             let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
             
-            // In PoE, if Final Taken >= Life Pool exactly, you are dead. 
+            // If the strictly ceiled damage >= your life pool, you are dead.
             if (calculateTrack(testBase, ctx).total >= ctx.lifePool) {
                 high = mid;
             } else { 
@@ -690,7 +690,8 @@
                 low = mid; 
             }
         }
-        return Math.floor(maxHit);
+        // Rounding up the final returned Max Hit threshold
+        return Math.ceil(maxHit);
     }
 
     // --- 4. DATA COLLECTION & UI UPDATE ---
