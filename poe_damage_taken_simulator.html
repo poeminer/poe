@@ -716,8 +716,8 @@
             delayedDmg: getVal('delayedDmg'), guardSkill: getStr('guardSkill')
         };
 
-        const resMin = calculateTrack(baseMin, ctx, true);
-        const resAvg = calculateTrack(baseAvg, ctx, true); 
+        const resMin = calculateTrack(baseMin, ctx, false);
+        const resAvg = calculateTrack(baseAvg, ctx, false); 
         const resMax = calculateTrack(baseMax, ctx, true); 
 
         // Update Log
