@@ -34,7 +34,7 @@
             "lifePool": 7005, "resFire": 90, "resCold": 90, "resLight": 90, "resChaos": 75, "armor": 226428, "addPDR": 40, "addEleDR": 40,
             "suppress": 0, "fortify": 0, "redCrit": 100, "delayedDmg": 0, "guardSkill": "moltenshell",
             "armorEle": 100, "armorChaos": 15, "lessDmg": 21,
-            "physToFire": 20, "physToCold": 0, "physToLight": 83, "physToChaos": 0, "coldToFire": 18, "coldToLight": 0, "lightToFire": 16, "fireToLight": 0, "eleToChaos": 0, "chaosToLight": 0
+            "physToFire": 20, "physToCold": 0, "physToLight": 83, "physToChaos": 0, "coldToFire": 18, "coldToLight": 0, "lightToFire": 16, "fireToLight": 0, "eleToChaos": 0, "chaosToLight": 51
         }
     }
 }
