@@ -491,8 +491,8 @@
     // --- 1. CONFIGURATION & PRESETS ---
     const DAMAGE_TYPES = ['phys', 'fire', 'cold', 'light', 'chaos'];
     let presets = { monster: {}, player: {} };
-   let damageCharts = {}; // Updated to hold multiple Chart.js instances
-
+    let damageCharts = {};
+        
     // --- 2. UI & EVENT BINDING ---
     const getVal = id => parseFloat(document.getElementById(id)?.value) || 0;
     const getChecked = id => document.getElementById(id)?.checked || false;
@@ -653,7 +653,23 @@
         return finalTaken;
     }
 
-   // --- NEW: SEPARATED GRAPH UPDATER ---
+    function calculateMaxHit(dmgType, ctx) {
+        let low = 0, high = 1000000000, maxHit = 0;
+        for (let i = 0; i < 150; i++) {
+            let mid = (low + high) / 2;
+            let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
+            
+            if (calculateTrack(testBase, ctx).total >= ctx.lifePool) {
+                high = mid;
+            } else { 
+                maxHit = mid; 
+                low = mid; 
+            }
+        }
+        return Math.floor(maxHit);
+    }
+    
+    // --- NEW: SEPARATED GRAPH UPDATER ---
     function updateDamageGraphs(ctx) {
         const colors = {
             phys: '#a38d6d',
