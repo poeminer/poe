@@ -537,7 +537,7 @@
         return parts.length === 0 ? `0` : `${parts.join(' | ')} <strong>(Sum: ${Math.round(total)})</strong>`;
     }
 
-    // --- 3. CORE CALCULATION ENGINE ---
+    // --- 3. CORE CALCULATION ENGINE (UPDATED FOR TRUNCATION) ---
     function calculateTrack(baseDmg, ctx, doLog = false) {
         let logBreakdown = [];
         const logStep = (stepNum, desc, dmgObj, prevTotal) => {
@@ -548,13 +548,13 @@
             return currentTotal;
         };
 
+        // STEP 1: Base Input
         let totalBase = DAMAGE_TYPES.reduce((sum, t) => sum + baseDmg[t], 0);
         if (doLog) logBreakdown.push(`➔ <b>1. Initial Incoming Damage:</b> ` + formatDmgLog(baseDmg) + ` <span style="color: #888;">(Base)</span>`);
 
         // STEP 2: Shift
         let shiftedDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
         
-        // Calculate the total shift for each type
         const shiftSums = {
             phys: ctx.shift.physToFire + ctx.shift.physToCold + ctx.shift.physToLight + ctx.shift.physToChaos,
             fire: ctx.shift.fireToLight + ctx.shift.eleToChaos,
@@ -563,12 +563,10 @@
             chaos: ctx.shift.chaosToLight
         };
 
-        // Keep the unshifted base damage
         DAMAGE_TYPES.forEach(type => {
             shiftedDmg[type] += baseDmg[type] * (1 - Math.min(100, shiftSums[type]) / 100);
         });
 
-        // Distribute proportionally scaled damage to destinations
         if (baseDmg.phys > 0) {
             shiftedDmg.fire  += baseDmg.phys * ctx.shift.physToFire/100;
             shiftedDmg.cold  += baseDmg.phys * ctx.shift.physToCold/100;
@@ -592,6 +590,8 @@
             shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight/100;
         }
 
+        // Apply truncation after shifting logic completes
+        DAMAGE_TYPES.forEach(t => shiftedDmg[t] = Math.floor(shiftedDmg[t]));
         let totalShifted = logStep(2, "After Damage Taken As (Simultaneous)", shiftedDmg, totalBase);
 
         // STEP 3: Resistances
@@ -599,38 +599,40 @@
         ['fire', 'cold', 'light', 'chaos'].forEach(type => {
             let pen = (type === 'chaos') ? 0 : ctx.elePen;
             let effRes = ctx.res[type] - pen; 
-            postResDmg[type] = Math.max(0, shiftedDmg[type] * (1 - effRes / 100));
+            // Truncate after resistances
+            postResDmg[type] = Math.max(0, Math.floor(shiftedDmg[type] * (1 - effRes / 100)));
         });
         let totalRes = logStep(3, "After Resistances", postResDmg, totalShifted);
 
-        // STEP 4: Armour & Flat DR (Corrected to global 90% DR cap)
+        // STEP 4: Armour & Flat DR
         let postArmorDmg = {};
         DAMAGE_TYPES.forEach(type => {
             let effArmor = type === 'phys' ? ctx.armor : (type === 'chaos' ? ctx.armorForChaos : ctx.armorForEle);
             
-            // Calculate raw armour mitigation
             let armorMit = (postResDmg[type] <= 0 || effArmor <= 0) ? 0 : effArmor / (effArmor + 5 * postResDmg[type]);
             
-            // Fetch flat DR based on damage type
             let flatDR = 0;
             if (type === 'phys') flatDR = ctx.addPDR / 100;
             else if (type !== 'chaos') flatDR = ctx.addEleDR / 100;
             
-            // PoE hard-caps ALL combined Damage Reduction (Armour + Flat DR) at exactly 90%
             let totalMit = Math.min(0.90, armorMit + flatDR);
             
-            postArmorDmg[type] = postResDmg[type] * (1 - totalMit);
+            // Truncate after armour and physical/elemental damage reduction
+            postArmorDmg[type] = Math.floor(postResDmg[type] * (1 - totalMit));
         });
         let totalArmor = logStep(4, "After Armour & Flat DR", postArmorDmg, totalRes);
 
-        // STEP 5: Multipliers
+        // STEP 5: Multipliers (Spell Suppression, Fortify, Less Damage Taken)
+        // Note: For a true Max Hit calculation, suppression should be binary (either 0% or 100% active).
+        // If you are keeping it as an average for general EHP tracking, truncation still applies here.
         let multiPool = (1 - ctx.fortify / 100) * ctx.lessMulti;
         if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100);
         let icMulti = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0; 
         
         let postMultiDmg = {};
         DAMAGE_TYPES.forEach(t => {
-            postMultiDmg[t] = postArmorDmg[t] * multiPool * (t !== 'chaos' ? icMulti : 1.0);
+            // Truncate after global multipliers
+            postMultiDmg[t] = Math.floor(postArmorDmg[t] * multiPool * (t !== 'chaos' ? icMulti : 1.0));
         });
         let totalMulti = logStep(5, "After Multipliers (Suppress/Fortify)", postMultiDmg, totalArmor);
 
@@ -641,21 +643,28 @@
 
         let guardRatio = totalMulti > 0 ? (totalMulti - guardAbsorb) / totalMulti : 1;
         let postGuardDmg = {};
-        DAMAGE_TYPES.forEach(t => postGuardDmg[t] = postMultiDmg[t] * guardRatio);
+        DAMAGE_TYPES.forEach(t => {
+            // Truncate after guard skill absorption
+            postGuardDmg[t] = Math.floor(postMultiDmg[t] * guardRatio);
+        });
+
         if (doLog && guardAbsorb > 0) {
             logBreakdown.push(`➔ <b>6. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(postGuardDmg) + ` <span style="color: #6cf;">(Reduced by ${((1 - guardRatio) * 100).toFixed(1)}%)</span>`);
         }
 
-       // STEP 7: Final (Corrected to always round UP to the higher integer)
+       // STEP 7: Final
         let finalTaken = { total: 0, delayed: 0, breakdown: logBreakdown };
         DAMAGE_TYPES.forEach(t => {
-            let delayedPart = postGuardDmg[t] * (ctx.delayedDmg / 100);
+            let delayedPart = Math.floor(postGuardDmg[t] * (ctx.delayedDmg / 100));
             let immPart = postGuardDmg[t] - delayedPart;
             
-            // Path of Exile always registers fractional damage as a minimum of 1
-            finalTaken[t] = Math.ceil(immPart);
-            finalTaken.total += Math.ceil(immPart);
-            finalTaken.delayed += Math.ceil(delayedPart);
+            // If the hit dealt >0 base damage of this type but mitigated to 0, PoE enforces a minimum of 1 damage.
+            // If it mitigated completely earlier in the chain, we respect the 0.
+            let minDmgFloor = (baseDmg[t] > 0 && immPart < 1 && immPart > 0) ? 1 : Math.floor(immPart);
+
+            finalTaken[t] = minDmgFloor;
+            finalTaken.total += minDmgFloor;
+            finalTaken.delayed += delayedPart;
         });
 
         if (doLog) {
@@ -674,7 +683,6 @@
             let mid = (low + high) / 2;
             let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
             
-            // If the strictly ceiled damage >= your life pool, you are dead.
             if (calculateTrack(testBase, ctx).total >= ctx.lifePool) {
                 high = mid;
             } else { 
@@ -682,11 +690,10 @@
                 low = mid; 
             }
         }
-        // Rounding up the final returned Max Hit threshold
-        return Math.ceil(maxHit);
+        // Changed to Math.floor to respect the truncation logic
+        return Math.floor(maxHit);
     }
-
-    // --- 4. DATA COLLECTION & UI UPDATE ---
+        // --- 4. DATA COLLECTION & UI UPDATE ---
     function runCalculations() {
         const baseExtraMulti = Math.max(0, getVal('critMulti') - 100);
         const reducedExtra = baseExtraMulti * (1 - getVal('redCrit') / 100);
