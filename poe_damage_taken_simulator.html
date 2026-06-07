@@ -564,30 +564,30 @@
         };
 
         DAMAGE_TYPES.forEach(type => {
-            shiftedDmg[type] += baseDmg[type] * (1 - Math.min(100, shiftSums[type]) / 100);
+            shiftedDmg[type] += baseDmg[type] * (1 - Math.min(100, shiftSums[type]) / 100.0);
         });
 
         if (baseDmg.phys > 0) {
-            shiftedDmg.fire  += baseDmg.phys * ctx.shift.physToFire/100;
-            shiftedDmg.cold  += baseDmg.phys * ctx.shift.physToCold/100;
-            shiftedDmg.light += baseDmg.phys * ctx.shift.physToLight/100;
-            shiftedDmg.chaos += baseDmg.phys * ctx.shift.physToChaos/100;
+            shiftedDmg.fire  += baseDmg.phys * ctx.shift.physToFire/100.0;
+            shiftedDmg.cold  += baseDmg.phys * ctx.shift.physToCold/100.0;
+            shiftedDmg.light += baseDmg.phys * ctx.shift.physToLight/100.0;
+            shiftedDmg.chaos += baseDmg.phys * ctx.shift.physToChaos/100.0;
         }
         if (baseDmg.fire > 0) {
-            shiftedDmg.light += baseDmg.fire * ctx.shift.fireToLight/100;
-            shiftedDmg.chaos += baseDmg.fire * ctx.shift.eleToChaos/100;
+            shiftedDmg.light += baseDmg.fire * ctx.shift.fireToLight/100.0;
+            shiftedDmg.chaos += baseDmg.fire * ctx.shift.eleToChaos/100.0;
         }
         if (baseDmg.cold > 0) {
-            shiftedDmg.fire  += baseDmg.cold * ctx.shift.coldToFire/100;
-            shiftedDmg.light += baseDmg.cold * ctx.shift.coldToLight/100;
-            shiftedDmg.chaos += baseDmg.cold * ctx.shift.eleToChaos/100;
+            shiftedDmg.fire  += baseDmg.cold * ctx.shift.coldToFire/100.0;
+            shiftedDmg.light += baseDmg.cold * ctx.shift.coldToLight/100.0;
+            shiftedDmg.chaos += baseDmg.cold * ctx.shift.eleToChaos/100.0;
         }
         if (baseDmg.light > 0) {
-            shiftedDmg.fire  += baseDmg.light * ctx.shift.lightToFire/100;
-            shiftedDmg.chaos += baseDmg.light * ctx.shift.eleToChaos/100;
+            shiftedDmg.fire  += baseDmg.light * ctx.shift.lightToFire/100.0;
+            shiftedDmg.chaos += baseDmg.light * ctx.shift.eleToChaos/100.0;
         }
         if (baseDmg.chaos > 0) {
-            shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight/100;
+            shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight/100.0;
         }
 
         // Apply truncation after shifting logic completes
@@ -600,7 +600,7 @@
             let pen = (type === 'chaos') ? 0 : ctx.elePen;
             let effRes = ctx.res[type] - pen; 
             // Truncate after resistances
-            postResDmg[type] = Math.max(0, Math.floor(shiftedDmg[type] * (1 - effRes / 100)));
+            postResDmg[type] = Math.max(0, Math.floor(shiftedDmg[type] * (1 - effRes / 100.0)));
         });
         let totalRes = logStep(3, "After Resistances", postResDmg, totalShifted);
 
@@ -612,8 +612,8 @@
             let armorMit = (postResDmg[type] <= 0 || effArmor <= 0) ? 0 : effArmor / (effArmor + 5 * postResDmg[type]);
             
             let flatDR = 0;
-            if (type === 'phys') flatDR = ctx.addPDR / 100;
-            else if (type !== 'chaos') flatDR = ctx.addEleDR / 100;
+            if (type === 'phys') flatDR = ctx.addPDR / 100.0;
+            else if (type !== 'chaos') flatDR = ctx.addEleDR / 100.0;
             
             let totalMit = Math.min(0.90, armorMit + flatDR);
             
@@ -626,7 +626,7 @@
         // Note: For a true Max Hit calculation, suppression should be binary (either 0% or 100% active).
         // If you are keeping it as an average for general EHP tracking, truncation still applies here.
         let multiPool = (1 - ctx.fortify / 100) * ctx.lessMulti;
-        if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100);
+        if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100.0);
         let icMulti = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0; 
         
         let postMultiDmg = {};
@@ -655,7 +655,7 @@
        // STEP 7: Final
         let finalTaken = { total: 0, delayed: 0, breakdown: logBreakdown };
         DAMAGE_TYPES.forEach(t => {
-            let delayedPart = Math.floor(postGuardDmg[t] * (ctx.delayedDmg / 100));
+            let delayedPart = Math.floor(postGuardDmg[t] * (ctx.delayedDmg / 100.0));
             let immPart = postGuardDmg[t] - delayedPart;
             
             // If the hit dealt >0 base damage of this type but mitigated to 0, PoE enforces a minimum of 1 damage.
@@ -679,7 +679,7 @@
     function calculateMaxHit(dmgType, ctx) {
         // High precision search loop
         let low = 0, high = 1000000000, maxHit = 0;
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 150; i++) {
             let mid = (low + high) / 2;
             let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
             
