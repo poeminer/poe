@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Path of Exile Damage Simulator (Profiles)</title>
+    <title>Damage Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-color: #121212;
@@ -38,6 +39,7 @@
             gap: 12px;
             max-width: 1400px;
             margin: 0 auto;
+            padding-bottom: 40px;
         }
 
         .panel {
@@ -48,13 +50,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        .full-width {
-            grid-column: 1 / -1;
-        }
-        
-        .half-width {
-            grid-column: span 1;
-        }
+        .full-width { grid-column: 1 / -1; }
+        .half-width { grid-column: span 1; }
 
         .form-group {
             display: flex;
@@ -63,11 +60,9 @@
             margin-bottom: 5px;
         }
 
-        .form-group label {
-            flex: 1;
-        }
+        .form-group label { flex: 1; }
 
-        .form-group input[type="number"], .preset-select {
+        .form-group input[type="number"], .preset-select, .player-input {
             padding: 4px;
             background-color: #2a2a2a;
             border: 1px solid #444;
@@ -176,7 +171,6 @@
 <body>
 
     <div class="container">
-        <!-- Monster Panel -->
         <div class="panel">
             <h2>Monster Damage Profile</h2>
             <select id="monsterPreset" class="preset-select"></select>
@@ -236,7 +230,6 @@
             </div>
         </div>
 
-        <!-- Player Defense Panel -->
         <div class="panel">
             <h2>Player Defense Profile</h2>
             <select id="playerPreset" class="preset-select"></select>
@@ -322,7 +315,6 @@
             </div>
         </div>
 
-        <!-- Shift Panel -->
         <div class="panel">
             <h2>Damage Taken As (Shift)</h2>
             <h3 class="c-phys" style="margin-top: 0;">Physical Taken As...</h3>
@@ -376,7 +368,6 @@
             </div>
         </div>
 
-        <!-- Final Hit Damage Taken Breakdown -->
         <div class="panel" style="grid-column: span 2;">
             <h2>Final Hit Damage Breakdown</h2>
             <table class="result-table">
@@ -439,9 +430,8 @@
                     </tr>
                 </tbody>
             </table>
-        </div> <!-- Properly Closed Final Breakdown Panel -->
+        </div> 
 
-        <!-- Maximum Hit Thresholds -->
         <div class="panel half-width">
             <h2>Maximum Hit Pool (EHP vs One-Shots)</h2>
             <p style="font-size: 11px; color: #aaa; margin-top:0;">The largest pure hit of this type you can take before your HP hits 0.</p>
@@ -475,25 +465,26 @@
                     </tr>
                 </tbody>
             </table>
-        </div> <!-- Properly Closed Max Hit Panel -->
+        </div>
 
-        <!-- Breakdown Log Visualization -->
         <div class="panel full-width">
             <h2>Step-by-Step Defense Breakdown (Maximum Hit Log)</h2>
             <ul id="breakdownLog" class="breakdown-log" style="list-style-type:none; padding:0; margin:0; font-family:monospace; font-size:13px; line-height: 1.6;">
-                <!-- Logs injected here via JS -->
-            </ul>
+                </ul>
         </div>
         
+        <div class="panel full-width">
+            <h2>Damage Scaling (Taken vs Incoming Raw Damage)</h2>
+            <canvas id="damageGraph" style="max-height: 400px;"></canvas>
+        </div>
         
     </div>
 
     <script>
     // --- 1. CONFIGURATION & PRESETS ---
     const DAMAGE_TYPES = ['phys', 'fire', 'cold', 'light', 'chaos'];
-    
-    // We will store the loaded JSON profiles here
     let presets = { monster: {}, player: {} };
+    let damageChart = null; // Holds the Chart.js instance
 
     // --- 2. UI & EVENT BINDING ---
     const getVal = id => parseFloat(document.getElementById(id)?.value) || 0;
@@ -548,13 +539,10 @@
             return currentTotal;
         };
 
-        // STEP 1: Base Input
         let totalBase = DAMAGE_TYPES.reduce((sum, t) => sum + baseDmg[t], 0);
         if (doLog) logBreakdown.push(`➔ <b>1. Initial Incoming Damage:</b> ` + formatDmgLog(baseDmg) + ` <span style="color: #888;">(Base)</span>`);
 
-        // STEP 2: Shift
         let shiftedDmg = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
-        
         const shiftSums = {
             phys: ctx.shift.physToFire + ctx.shift.physToCold + ctx.shift.physToLight + ctx.shift.physToChaos,
             fire: ctx.shift.fireToLight + ctx.shift.eleToChaos,
@@ -592,21 +580,17 @@
         DAMAGE_TYPES.forEach(t => shiftedDmg[t] = Math.floor(shiftedDmg[t]));
         let totalShifted = logStep(2, "After Damage Taken As (Simultaneous)", shiftedDmg, totalBase);
 
-        // STEP 3: Resistances
         let postResDmg = { phys: shiftedDmg.phys };
         ['fire', 'cold', 'light', 'chaos'].forEach(type => {
             let pen = (type === 'chaos') ? 0 : ctx.elePen;
             let effRes = ctx.res[type] - pen; 
-            // Truncate after resistances
             postResDmg[type] = Math.max(0, Math.floor(shiftedDmg[type] * (1 - effRes / 100.0)));
         });
         let totalRes = logStep(3, "After Resistances", postResDmg, totalShifted);
 
-        // STEP 4: Armour & Flat DR
         let postArmorDmg = {};
         DAMAGE_TYPES.forEach(type => {
             let effArmor = type === 'phys' ? ctx.armor : (type === 'chaos' ? ctx.armorForChaos : ctx.armorForEle);
-            
             let armorMit = (postResDmg[type] <= 0 || effArmor <= 0) ? 0 : effArmor / (effArmor + 5 * postResDmg[type]);
             
             let flatDR = 0;
@@ -618,7 +602,6 @@
         });
         let totalArmor = logStep(4, "After Armour & Flat DR", postArmorDmg, totalRes);
 
-        // STEP 5: Multipliers (Spell Suppression, Fortify, Less Damage Taken)
         let multiPool = (1 - ctx.fortify / 100) * ctx.lessMulti;
         if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100.0);
         let icMulti = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0; 
@@ -629,7 +612,6 @@
         });
         let totalMulti = logStep(5, "After Multipliers (Suppress/Fortify)", postMultiDmg, totalArmor);
 
-        // STEP 6: Guard Skill
         let guardAbsorb = 0;
         if (ctx.guardSkill === 'steelskin') guardAbsorb = Math.min(2209, totalMulti * 0.70);
         else if (ctx.guardSkill === 'moltenshell') guardAbsorb = Math.min(Math.min(10000, ctx.armor * 0.20), totalMulti * 0.75);
@@ -644,12 +626,10 @@
             logBreakdown.push(`➔ <b>6. After Guard Skill (Absorbed ${Math.round(guardAbsorb)}):</b> ` + formatDmgLog(postGuardDmg) + ` <span style="color: #6cf;">(Reduced by ${((1 - guardRatio) * 100).toFixed(1)}%)</span>`);
         }
 
-       // STEP 7: Final
         let finalTaken = { total: 0, delayed: 0, breakdown: logBreakdown };
         DAMAGE_TYPES.forEach(t => {
             let delayedPart = Math.floor(postGuardDmg[t] * (ctx.delayedDmg / 100.0));
             let immPart = postGuardDmg[t] - delayedPart;
-            
             let minDmgFloor = (baseDmg[t] > 0 && immPart < 1 && immPart > 0) ? 1 : Math.floor(immPart);
 
             finalTaken[t] = minDmgFloor;
@@ -681,7 +661,83 @@
         }
         return Math.floor(maxHit);
     }
-        // --- 4. DATA COLLECTION & UI UPDATE ---
+    
+    // --- NEW: GRAPH UPDATER ---
+    function updateDamageGraph(ctx) {
+        // Evaluate up to 50k incoming damage
+        const xValues = [0, 1000, 2500, 5000, 7500, 10000, 15000, 20000, 30000, 40000, 50000];
+        const datasets = [];
+        const colors = {
+            phys: '#a38d6d',
+            fire: '#e65c00',
+            cold: '#40c4ff',
+            light: '#ffd600',
+            chaos: '#aa00ff'
+        };
+
+        DAMAGE_TYPES.forEach(type => {
+            const dataPoints = xValues.map(x => {
+                let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
+                testBase[type] = x;
+                return calculateTrack(testBase, ctx, false).total;
+            });
+
+            datasets.push({
+                label: type.charAt(0).toUpperCase() + type.slice(1),
+                data: dataPoints,
+                borderColor: colors[type],
+                backgroundColor: colors[type] + '20',
+                borderWidth: 2,
+                tension: 0.2, // Smooth curves for Armour scaling visualization
+                pointRadius: 3
+            });
+        });
+
+        const ctxCanvas = document.getElementById('damageGraph').getContext('2d');
+
+        if (damageChart) {
+            damageChart.data.labels = xValues;
+            damageChart.data.datasets = datasets;
+            damageChart.update();
+        } else {
+            // First time render
+            Chart.defaults.color = '#aaa';
+            damageChart = new Chart(ctxCanvas, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Incoming Raw Hit Damage', color: '#e0e0e0' },
+                            grid: { color: '#333' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Final Immediate HP Lost', color: '#e0e0e0' },
+                            grid: { color: '#333' },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e0e0e0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' taken';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // --- 4. DATA COLLECTION & UI UPDATE ---
     function runCalculations() {
         const baseExtraMulti = Math.max(0, getVal('critMulti') - 100);
         const reducedExtra = baseExtraMulti * (1 - getVal('redCrit') / 100);
@@ -742,17 +798,17 @@
             const el = document.getElementById('max' + t.charAt(0).toUpperCase() + t.slice(1));
             if(el) el.innerText = calculateMaxHit(t, ctx).toLocaleString();
         });
+        
+        // Update Graphic
+        updateDamageGraph(ctx);
     }
 
     // --- 5. INITIALIZE DATA VIA FETCH ---
     async function loadExternalData() {
         try {
             const response = await fetch('profiles.json');
-            
             if (!response.ok) throw new Error("Network response was not ok");
-            
             presets = await response.json();
-            
             initSelects();
             
             const firstMonsterKey = Object.keys(presets.monster)[0];
@@ -762,11 +818,11 @@
             loadPreset(presets.player.glassCannon || presets.player[firstPlayerKey]);
             
         } catch (error) {
-            console.error('Failed to load profiles.json:', error);
-                   }
+            console.error('Failed to load profiles.json. Proceeding with blank state:', error);
+            // Run calcs anyway to ensure graphs render on 0-state if local dev fails CORS
+            runCalculations();
+        }
     }
-
-    // Run the async init function
     loadExternalData();
     </script>
 </body>
