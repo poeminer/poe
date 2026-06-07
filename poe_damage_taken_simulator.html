@@ -475,7 +475,14 @@
         
         <div class="panel full-width">
             <h2>Damage Scaling (Taken vs Incoming Raw Damage)</h2>
-            <canvas id="damageGraph" style="max-height: 400px;"></canvas>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 30px;">
+                <!-- Container for each chart to constrain their heights properly -->
+                <div style="position: relative; height: 300px; width: 100%;"><canvas id="graph-phys"></canvas></div>
+                <div style="position: relative; height: 300px; width: 100%;"><canvas id="graph-fire"></canvas></div>
+                <div style="position: relative; height: 300px; width: 100%;"><canvas id="graph-cold"></canvas></div>
+                <div style="position: relative; height: 300px; width: 100%;"><canvas id="graph-light"></canvas></div>
+                <div style="position: relative; height: 300px; width: 100%;"><canvas id="graph-chaos"></canvas></div>
+            </div>
         </div>
         
     </div>
@@ -484,7 +491,7 @@
     // --- 1. CONFIGURATION & PRESETS ---
     const DAMAGE_TYPES = ['phys', 'fire', 'cold', 'light', 'chaos'];
     let presets = { monster: {}, player: {} };
-    let damageChart = null; // Holds the Chart.js instance
+   let damageCharts = {}; // Updated to hold multiple Chart.js instances
 
     // --- 2. UI & EVENT BINDING ---
     const getVal = id => parseFloat(document.getElementById(id)?.value) || 0;
@@ -646,27 +653,8 @@
         return finalTaken;
     }
 
-    function calculateMaxHit(dmgType, ctx) {
-        let low = 0, high = 1000000000, maxHit = 0;
-        for (let i = 0; i < 150; i++) {
-            let mid = (low + high) / 2;
-            let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0, [dmgType]: mid };
-            
-            if (calculateTrack(testBase, ctx).total >= ctx.lifePool) {
-                high = mid;
-            } else { 
-                maxHit = mid; 
-                low = mid; 
-            }
-        }
-        return Math.floor(maxHit);
-    }
-    
-    // --- NEW: GRAPH UPDATER ---
-    function updateDamageGraph(ctx) {
-        // Evaluate up to 50k incoming damage
-        const xValues = [0, 1000, 2500, 5000, 7500, 10000, 15000, 20000, 30000, 40000, 50000];
-        const datasets = [];
+   // --- NEW: SEPARATED GRAPH UPDATER ---
+    function updateDamageGraphs(ctx) {
         const colors = {
             phys: '#a38d6d',
             fire: '#e65c00',
@@ -676,65 +664,87 @@
         };
 
         DAMAGE_TYPES.forEach(type => {
+            // 1. Determine the maximum hit for this specific type
+            let maxHit = calculateMaxHit(type, ctx);
+            
+            // 2. Scale the maximum X value to the next 100,000
+            let maxX = Math.ceil(Math.max(maxHit, 1) / 100000) * 100000;
+            
+            // 3. Generate 30 data points (31 to include 0) for a smoother curve
+            let xValues = [];
+            let step = maxX / 30;
+            for (let i = 0; i <= 30; i++) {
+                xValues.push(Math.round(i * step));
+            }
+
+            // 4. Calculate resulting HP lost for each data point
             const dataPoints = xValues.map(x => {
                 let testBase = { phys: 0, fire: 0, cold: 0, light: 0, chaos: 0 };
                 testBase[type] = x;
                 return calculateTrack(testBase, ctx, false).total;
             });
 
-            datasets.push({
-                label: type.charAt(0).toUpperCase() + type.slice(1),
-                data: dataPoints,
-                borderColor: colors[type],
-                backgroundColor: colors[type] + '20',
-                borderWidth: 2,
-                tension: 0.2, // Smooth curves for Armour scaling visualization
-                pointRadius: 3
-            });
-        });
+            const canvasId = 'graph-' + type;
+            const ctxCanvas = document.getElementById(canvasId).getContext('2d');
+            const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
 
-        const ctxCanvas = document.getElementById('damageGraph').getContext('2d');
-
-        if (damageChart) {
-            damageChart.data.labels = xValues;
-            damageChart.data.datasets = datasets;
-            damageChart.update();
-        } else {
-            // First time render
-            Chart.defaults.color = '#aaa';
-            damageChart = new Chart(ctxCanvas, {
-                type: 'line',
-                data: {
-                    labels: xValues,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: { display: true, text: 'Incoming Raw Hit Damage', color: '#e0e0e0' },
-                            grid: { color: '#333' }
-                        },
-                        y: {
-                            title: { display: true, text: 'Final Immediate HP Lost', color: '#e0e0e0' },
-                            grid: { color: '#333' },
-                            beginAtZero: true
-                        }
+            if (damageCharts[type]) {
+                // Update existing chart
+                damageCharts[type].data.labels = xValues;
+                damageCharts[type].data.datasets[0].data = dataPoints;
+                damageCharts[type].update();
+            } else {
+                // Create new chart on first render
+                Chart.defaults.color = '#aaa';
+                damageCharts[type] = new Chart(ctxCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: xValues,
+                        datasets: [{
+                            label: `${typeLabel} Damage Scaling`,
+                            data: dataPoints,
+                            borderColor: colors[type],
+                            backgroundColor: colors[type] + '20',
+                            borderWidth: 2,
+                            tension: 0.2, // Smooth curves
+                            pointRadius: 2,
+                            fill: true
+                        }]
                     },
-                    plugins: {
-                        legend: { labels: { color: '#e0e0e0' } },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y + ' taken';
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: { display: true, text: `Incoming Raw ${typeLabel} Hit`, color: '#e0e0e0' },
+                                grid: { color: '#333' },
+                                ticks: {
+                                    maxTicksLimit: 10 // Show ~10 numbers on X axis
+                                }
+                            },
+                            y: {
+                                title: { display: true, text: 'Final Immediate HP Lost', color: '#e0e0e0' },
+                                grid: { color: '#333' },
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 500 // Forces 500 intervals on the Y axis
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#e0e0e0' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.parsed.y} HP taken from ${context.parsed.x} incoming`;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
-        }
+                });
+            }
+        });
     }
 
     // --- 4. DATA COLLECTION & UI UPDATE ---
@@ -800,7 +810,7 @@
         });
         
         // Update Graphic
-        updateDamageGraph(ctx);
+        updateDamageGraphs(ctx);
     }
 
     // --- 5. INITIALIZE DATA VIA FETCH ---
