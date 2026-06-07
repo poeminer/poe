@@ -17,21 +17,24 @@
     "player": {
         "glassCannon": {
             "name": "Softcore League Starter (Glass)",
-            "lifePool": 4500, "resFire": 75, "resCold": 75, "resLight": 75, "resChaos": -60, "armor": 0, "addPDR": 0, "addEleDR": 0,
+            "life": 4500, "energyShield": 0,
+            "resFire": 75, "resCold": 75, "resLight": 75, "resChaos": -60, "armor": 0, "addPDR": 0, "addEleDR": 0,
             "suppress": 0, "fortify": 0, "redCrit": 0, "delayedDmg": 0, "guardSkill": "none",
             "armorEle": 0, "armorChaos": 0, "lessDmg": 0,
             "physToFire": 0, "physToCold": 0, "physToLight": 0, "physToChaos": 0, "coldToFire": 0, "coldToLight": 0, "lightToFire": 0, "fireToLight": 0, "eleToChaos": 0, "chaosToLight": 0
         },
         "hcJugg": {
             "name": "Hardcore Juggernaut (Tank)",
-            "lifePool": 6500, "resFire": 80, "resCold": 80, "resLight": 80, "resChaos": 75, "armor": 60000, "addPDR": 20, "addEleDR": 0,
+            "life": 6500, "energyShield": 300,
+            "resFire": 80, "resCold": 80, "resLight": 80, "resChaos": 75, "armor": 60000, "addPDR": 20, "addEleDR": 0,
             "suppress": 40, "fortify": 20, "redCrit": 50, "delayedDmg": 0, "guardSkill": "none",
             "armorEle": 8, "armorChaos": 0, "lessDmg": 0,
             "physToFire": 10, "physToCold": 0, "physToLight": 0, "physToChaos": 0, "coldToFire": 0, "coldToLight": 0, "lightToFire": 0, "fireToLight": 0, "eleToChaos": 0, "chaosToLight": 0
         },
         "LOLEXCEPTIONAL": {
             "name": "Hardcore Delve Jugg (LOLEXCEPTIONAL)",
-            "lifePool": 6989, "resFire": 90, "resCold": 90, "resLight": 90, "resChaos": 75, "armor": 226428, "addPDR": 40, "addEleDR": 40,
+            "life": 6989, "energyShield": 23,
+            "resFire": 90, "resCold": 90, "resLight": 90, "resChaos": 75, "armor": 226428, "addPDR": 40, "addEleDR": 40,
             "suppress": 0, "fortify": 0, "redCrit": 100, "delayedDmg": 0, "guardSkill": "none",
             "armorEle": 100, "armorChaos": 15, "lessDmg": 21,
             "physToFire": 20, "physToCold": 0, "physToLight": 83, "physToChaos": 0, "coldToFire": 18, "coldToLight": 0, "lightToFire": 16, "fireToLight": 0, "eleToChaos": 0, "chaosToLight": 51
