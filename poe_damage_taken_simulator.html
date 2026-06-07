@@ -235,8 +235,12 @@
             <select id="playerPreset" class="preset-select"></select>
             
             <div class="form-group" style="margin-bottom: 10px;">
-                <label style="font-weight: bold; color: white;">Max Life / ES Pool</label>
-                <input type="number" id="lifePool" class="player-input">
+                <label style="font-weight: bold; color: white;">Max Life</label>
+                <input type="number" id="life" class="player-input">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-weight: bold; color: #40c4ff;">Energy Shield</label>
+                <input type="number" id="energyShield" class="player-input">
             </div>
 
             <div class="form-group">
@@ -669,7 +673,7 @@
         return Math.floor(maxHit);
     }
     
-    // --- NEW: SEPARATED GRAPH UPDATER ---
+    // --- SEPARATED GRAPH UPDATER ---
     function updateDamageGraphs(ctx) {
         const colors = {
             phys: '#a38d6d',
@@ -686,10 +690,10 @@
             // 2. Scale the maximum X value to the next 100,000
             let maxX = Math.ceil(Math.max(maxHit, 1) / 100000) * 100000;
             
-            // 3. Generate 30 data points (31 to include 0) for a smoother curve
+            // 3. Generate 100 data points for a very smooth curve
             let xValues = [];
-            let step = maxX / 30;
-            for (let i = 0; i <= 30; i++) {
+            let step = maxX / 100;
+            for (let i = 0; i <= 100; i++) {
                 xValues.push(Math.round(i * step));
             }
 
@@ -700,6 +704,9 @@
                 return calculateTrack(testBase, ctx, false).total;
             });
 
+            // 5. Generate a flat line representing the Max Life + ES Pool
+            const maxPoolLine = xValues.map(() => ctx.lifePool);
+
             const canvasId = 'graph-' + type;
             const ctxCanvas = document.getElementById(canvasId).getContext('2d');
             const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
@@ -708,6 +715,9 @@
                 // Update existing chart
                 damageCharts[type].data.labels = xValues;
                 damageCharts[type].data.datasets[0].data = dataPoints;
+                if(damageCharts[type].data.datasets[1]) {
+                    damageCharts[type].data.datasets[1].data = maxPoolLine;
+                }
                 damageCharts[type].update();
             } else {
                 // Create new chart on first render
@@ -716,16 +726,28 @@
                     type: 'line',
                     data: {
                         labels: xValues,
-                        datasets: [{
-                            label: `${typeLabel} Damage Scaling`,
-                            data: dataPoints,
-                            borderColor: colors[type],
-                            backgroundColor: colors[type] + '20',
-                            borderWidth: 2,
-                            tension: 0.2, // Smooth curves
-                            pointRadius: 2,
-                            fill: true
-                        }]
+                        datasets: [
+                            {
+                                label: `${typeLabel} Damage Scaling`,
+                                data: dataPoints,
+                                borderColor: colors[type],
+                                backgroundColor: colors[type] + '20',
+                                borderWidth: 2,
+                                tension: 0.2, 
+                                pointRadius: 1, // Shrunk to 1 since there are now 100 points
+                                fill: true
+                            },
+                            {
+                                label: 'Max Life + ES Pool',
+                                data: maxPoolLine,
+                                borderColor: '#ff4444',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointRadius: 0, // Hidden points to keep it as a pure threshold line
+                                fill: false,
+                                tension: 0
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -735,7 +757,7 @@
                                 title: { display: true, text: `Incoming Raw ${typeLabel} Hit`, color: '#e0e0e0' },
                                 grid: { color: '#333' },
                                 ticks: {
-                                    maxTicksLimit: 10 // Show ~10 numbers on X axis
+                                    maxTicksLimit: 10 // Force ~10 numbers on X axis despite 100 points existing
                                 }
                             },
                             y: {
@@ -743,16 +765,23 @@
                                 grid: { color: '#333' },
                                 beginAtZero: true,
                                 ticks: {
-                                    stepSize: 500 // Forces 500 intervals on the Y axis
+                                    stepSize: 500 
                                 }
                             }
                         },
                         plugins: {
                             legend: { labels: { color: '#e0e0e0' } },
                             tooltip: {
+                                mode: 'index',
+                                intersect: false,
                                 callbacks: {
                                     label: function(context) {
-                                        return `${context.parsed.y} HP taken from ${context.parsed.x} incoming`;
+                                        // Check which line is being hovered
+                                        if (context.datasetIndex === 1) {
+                                            return `Death Threshold: ${context.parsed.y} HP`;
+                                        }
+                                        // Use context.label to pull the actual X-axis text, fixing the parsing error
+                                        return `${context.parsed.y} HP taken from ${context.label} incoming`;
                                     }
                                 }
                             }
@@ -778,7 +807,9 @@
         });
 
         const ctx = {
-            lifePool: getVal('lifePool'),
+            life: getVal('life'),
+            energyShield: getVal('energyShield'),
+            lifePool: getVal('life') + getVal('energyShield'),    // Combined for EHP checks
             shift: {
                 physToFire: getVal('physToFire'), physToCold: getVal('physToCold'), physToLight: getVal('physToLight'), physToChaos: getVal('physToChaos'),
                 coldToFire: getVal('coldToFire'), coldToLight: getVal('coldToLight'), lightToFire: getVal('lightToFire'), fireToLight: getVal('fireToLight'),
