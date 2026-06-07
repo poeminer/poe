@@ -537,7 +537,7 @@
         return parts.length === 0 ? `0` : `${parts.join(' | ')} <strong>(Sum: ${Math.round(total)})</strong>`;
     }
 
-    // --- 3. CORE CALCULATION ENGINE (UPDATED FOR TRUNCATION) ---
+    // --- 3. CORE CALCULATION ENGINE ---
     function calculateTrack(baseDmg, ctx, doLog = false) {
         let logBreakdown = [];
         const logStep = (stepNum, desc, dmgObj, prevTotal) => {
@@ -589,8 +589,6 @@
         if (baseDmg.chaos > 0) {
             shiftedDmg.light += baseDmg.chaos * ctx.shift.chaosToLight/100.0;
         }
-
-        // Apply truncation after shifting logic completes
         DAMAGE_TYPES.forEach(t => shiftedDmg[t] = Math.floor(shiftedDmg[t]));
         let totalShifted = logStep(2, "After Damage Taken As (Simultaneous)", shiftedDmg, totalBase);
 
@@ -616,22 +614,17 @@
             else if (type !== 'chaos') flatDR = ctx.addEleDR / 100.0;
             
             let totalMit = Math.min(0.90, armorMit + flatDR);
-            
-            // Truncate after armour and physical/elemental damage reduction
             postArmorDmg[type] = Math.floor(postResDmg[type] * (1 - totalMit));
         });
         let totalArmor = logStep(4, "After Armour & Flat DR", postArmorDmg, totalRes);
 
         // STEP 5: Multipliers (Spell Suppression, Fortify, Less Damage Taken)
-        // Note: For a true Max Hit calculation, suppression should be binary (either 0% or 100% active).
-        // If you are keeping it as an average for general EHP tracking, truncation still applies here.
         let multiPool = (1 - ctx.fortify / 100) * ctx.lessMulti;
         if (ctx.isSpell) multiPool *= (1 - ctx.suppress / 100.0);
         let icMulti = ctx.guardSkill === 'immortalcall' ? 0.75 : 1.0; 
         
         let postMultiDmg = {};
         DAMAGE_TYPES.forEach(t => {
-            // Truncate after global multipliers
             postMultiDmg[t] = Math.floor(postArmorDmg[t] * multiPool * (t !== 'chaos' ? icMulti : 1.0));
         });
         let totalMulti = logStep(5, "After Multipliers (Suppress/Fortify)", postMultiDmg, totalArmor);
@@ -644,7 +637,6 @@
         let guardRatio = totalMulti > 0 ? (totalMulti - guardAbsorb) / totalMulti : 1;
         let postGuardDmg = {};
         DAMAGE_TYPES.forEach(t => {
-            // Truncate after guard skill absorption
             postGuardDmg[t] = Math.floor(postMultiDmg[t] * guardRatio);
         });
 
@@ -658,8 +650,6 @@
             let delayedPart = Math.floor(postGuardDmg[t] * (ctx.delayedDmg / 100.0));
             let immPart = postGuardDmg[t] - delayedPart;
             
-            // If the hit dealt >0 base damage of this type but mitigated to 0, PoE enforces a minimum of 1 damage.
-            // If it mitigated completely earlier in the chain, we respect the 0.
             let minDmgFloor = (baseDmg[t] > 0 && immPart < 1 && immPart > 0) ? 1 : Math.floor(immPart);
 
             finalTaken[t] = minDmgFloor;
@@ -677,7 +667,6 @@
     }
 
     function calculateMaxHit(dmgType, ctx) {
-        // High precision search loop
         let low = 0, high = 1000000000, maxHit = 0;
         for (let i = 0; i < 150; i++) {
             let mid = (low + high) / 2;
@@ -690,7 +679,6 @@
                 low = mid; 
             }
         }
-        // Changed to Math.floor to respect the truncation logic
         return Math.floor(maxHit);
     }
         // --- 4. DATA COLLECTION & UI UPDATE ---
@@ -759,7 +747,6 @@
     // --- 5. INITIALIZE DATA VIA FETCH ---
     async function loadExternalData() {
         try {
-            // Ensure you are running a local development server for this to work
             const response = await fetch('profiles.json');
             
             if (!response.ok) throw new Error("Network response was not ok");
@@ -768,7 +755,6 @@
             
             initSelects();
             
-            // Get the first item key in each object as a safe fallback loader
             const firstMonsterKey = Object.keys(presets.monster)[0];
             const firstPlayerKey = Object.keys(presets.player)[0];
 
@@ -777,8 +763,7 @@
             
         } catch (error) {
             console.error('Failed to load profiles.json:', error);
-            document.getElementById('breakdownLog').innerHTML = `<li style="color:red; border-left-color: red;">Error: Could not load profiles.json. You must run this using a local web server (e.g., VSCode Live Server) to bypass CORS restrictions on local files.</li>`;
-        }
+                   }
     }
 
     // Run the async init function
